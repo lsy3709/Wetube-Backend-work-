@@ -37,12 +37,14 @@ def create_app():
     # 기능: DB URI, 업로드 폴더·용량·확장자, 기본 user_id 등을 앱 설정에 넣습니다.
     #       라우트에서 current_app.config["VIDEO_FOLDER"] 등으로 읽습니다.
     app.config.from_mapping(
+        # 세션·flash·CSRF 등 서명용. 개발/프론트 전용이라 고정값 사용. 운영에서는 환경변수 등으로 강한 랜덤 키 사용 필수.
         SECRET_KEY="dev-frontend-only",
         # DB: 환경변수 DATABASE_URL 없으면 SQLite (instance/wetube.db)
         SQLALCHEMY_DATABASE_URI=os.environ.get(
             "DATABASE_URL",
             f"sqlite:///{os.path.join(project_root, 'instance', 'wetube.db')}",
         ),
+        # 모델 속성 변경 추적 비활성화. True면 변경 시 before_commit 등 이벤트 발생·오버헤드 있음. 불필요하면 False 권장.
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         # 업로드 폴더 (절대 경로)
         VIDEO_FOLDER=video_folder,
@@ -86,14 +88,19 @@ def create_app():
     from app import models  # noqa: F401
     from app.models import User
 
+    # 앱 컨텍스트 안에서만 DB 작업 가능 (create_all, session 등)
     with app.app_context():
+        # 등록된 모델(User, Video) 기준으로 테이블 생성. 없으면 생성, 있으면 스킵
         db.create_all()
+        # user_id=1 이 없으면 업로드 시 DEFAULT_USER_ID(1)를 쓸 수 없으므로 기본 유저 생성
         if User.query.get(1) is None:
+            # 기본 유저 인스턴스 (실제 로그인·비밀번호 검증 없음)
             default_user = User(
                 username="default",
                 email="default@example.com",
                 password_hash="",
             )
+            # 세션에 추가 후 DB에 반영
             db.session.add(default_user)
             db.session.commit()
 
@@ -102,13 +109,17 @@ def create_app():
 
 # ---------------------------------------------------------------------------
 # 모듈 레벨 앱 인스턴스
-# 기능: flask run / FLASK_APP=app 일 때 이 app 객체가 로드됩니다.
+# flask run 시: FLASK_APP=app 이면 Flask CLI가 이 모듈(app/__init__.py)만 import.
+#               위 create_app() 실행 후 여기서 만든 app 을 가져다 WSGI 서버를 띄움. __main__.py 는 실행 안 함.
 # ---------------------------------------------------------------------------
 app = create_app()
 
 # ---------------------------------------------------------------------------
 # 직접 실행 시 진입점 (python -m app 또는 python app/__init__.py)
-# 기능: 개발 서버를 127.0.0.1:5000 에서 기동합니다.
+# 차이점:
+#   - flask run: 이 블록은 실행되지 않음. Flask CLI가 app 객체만 로드하고 자체 서버로 기동.
+#   - python -m app: 패키지 app 로드 → __init__.py 실행(app 생성) → __main__.py 실행(app.run 호출).
+#   - python app/__init__.py: 이 파일을 스크립트로 실행 → __init__.py 전체 실행 → 아래 app.run() 실행.
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     print("등록된 라우트: / /auth/login /auth/register /auth/profile /studio ...")
