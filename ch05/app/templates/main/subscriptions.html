@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}구독 - WeTube{% endblock %}
+
+{% block content %}
+  <div class="subscriptions-page" data-logged-in-only>
+    <div class="subscriptions-header">
+      <h1 class="subscriptions-title">구독</h1>
+      <div class="subscriptions-filters">
+        <button type="button" class="filter-btn active" data-filter="all">전체</button>
+        <button type="button" class="filter-btn" data-filter="today">오늘</button>
+        <button type="button" class="filter-btn" data-filter="week">이번 주</button>
+        <button type="button" class="filter-btn" data-filter="month">이번 달</button>
+      </div>
+    </div>
+
+    <!-- 구독된 채널별 영상 목록 -->
+    <div class="subscriptions-content">
+      {% for channel_num in range(3) %}
+      <div class="subscription-section">
+        <div class="subscription-channel-header">
+          <a href="{{ url_for('main.user_profile', username='channel' ~ (channel_num + 1)) }}" class="channel-link-header">
+            <div class="channel-avatar-small">
+              <span>C{{ channel_num + 1 }}</span>
+            </div>
+            <div class="channel-info-header">
+              <h2 class="channel-name-header">구독 채널 {{ channel_num + 1 }}</h2>
+              <span class="channel-subs-count">구독자 {{ (channel_num + 1) * 100 }}명</span>
+            </div>
+          </a>
+          <button type="button" class="btn btn--outline btn--small" data-unsubscribe data-channel="{{ channel_num + 1 }}">
+            구독 취소
+          </button>
+        </div>
+
+        <div class="subscription-videos">
+          <div class="video-grid-subscriptions">
+            {% for video_num in range(4) %}
+            <a href="{{ url_for('main.watch', video_id=channel_num*4 + video_num + 1) }}" class="video-card">
+              <div class="video-card-thumb">📹</div>
+              <h3 class="video-card-title">채널 {{ channel_num + 1 }}의 영상 {{ video_num + 1 }}</h3>
+              <p class="video-card-meta">
+                구독 채널 {{ channel_num + 1 }} · 조회수 {{ (channel_num*4 + video_num + 1) * 50 }}회
+              </p>
+              <p class="video-card-time">{{ video_num + 1 }}일 전</p>
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+      <!-- 구독된 채널이 없을 때 -->
+      <div class="subscriptions-empty" id="subscriptions-empty" style="display: none;">
+        <div class="empty-icon">📺</div>
+        <h2 class="empty-title">구독한 채널이 없습니다</h2>
+        <p class="empty-text">관심 있는 채널을 구독하면 최신 영상을 쉽게 확인할 수 있습니다.</p>
+        <a href="{{ url_for('main.index') }}" class="btn btn--primary">동영상 둘러보기</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="subscriptions-logged-out" data-logged-out-only>
+    <div class="hero">
+      <h1>구독하려면 로그인이 필요합니다</h1>
+      <p>채널을 구독하고 최신 영상을 받아보려면 로그인해주세요.</p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn--primary">로그인</a>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/subscriptions-page.js') }}"></script>
+{% endblock %}

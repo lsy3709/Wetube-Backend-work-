@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}#{{ tag }} - WeTube{% endblock %}
+
+{% block content %}
+  <div class="tag-page" data-logged-in-only>
+    <!-- 인기 태그 -->
+    <div class="popular-tags-section">
+      <h2 class="popular-tags-title">인기 태그</h2>
+      <div class="popular-tags">
+        <a href="{{ url_for('main.tag', tag='cafe') }}" class="tag-pill {% if tag == 'cafe' %}active{% endif %}">#cafe</a>
+        <a href="{{ url_for('main.tag', tag='music') }}" class="tag-pill {% if tag == 'music' %}active{% endif %}">#music</a>
+        <a href="{{ url_for('main.tag', tag='vlog') }}" class="tag-pill {% if tag == 'vlog' %}active{% endif %}">#vlog</a>
+        <a href="{{ url_for('main.tag', tag='game') }}" class="tag-pill {% if tag == 'game' %}active{% endif %}">#game</a>
+        <a href="{{ url_for('main.tag', tag='travel') }}" class="tag-pill {% if tag == 'travel' %}active{% endif %}">#travel</a>
+        <a href="{{ url_for('main.tag', tag='food') }}" class="tag-pill {% if tag == 'food' %}active{% endif %}">#food</a>
+        <a href="{{ url_for('main.tag', tag='tech') }}" class="tag-pill {% if tag == 'tech' %}active{% endif %}">#tech</a>
+        <a href="{{ url_for('main.tag', tag='daily') }}" class="tag-pill {% if tag == 'daily' %}active{% endif %}">#daily</a>
+      </div>
+    </div>
+
+    <!-- 태그별 영상 리스트 -->
+    <div class="tag-results">
+      <div class="tag-results-header">
+        <h1 class="tag-results-title">#{{ tag }}</h1>
+        <p class="tag-results-count"><strong>{{ results_count }}</strong>개의 동영상</p>
+      </div>
+
+      <div class="tag-video-grid">
+        {% for i in range(12) %}
+        <article class="video-card">
+          <a href="{{ url_for('main.watch', video_id=i+1) }}" class="video-card-link">
+            <div class="video-card-thumb">📹</div>
+            <h3 class="video-card-title">{{ tag }} 관련 동영상 {{ i + 1 }}</h3>
+          </a>
+          <a href="{{ url_for('main.user_profile', username='user' ~ (i+1)) }}" class="video-card-channel">채널 {{ i + 1 }}</a>
+          <p class="video-card-meta">조회수 {{ (i + 1) * 50 }}회</p>
+          <p class="video-card-tag">#{{ tag }}</p>
+        </article>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="tag-logged-out" data-logged-out-only>
+    <div class="hero">
+      <h1>태그별 동영상을 보려면 로그인이 필요합니다</h1>
+      <p>로그인하여 인기 태그별 동영상을 확인해보세요.</p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn--primary">로그인</a>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+{% endblock %}

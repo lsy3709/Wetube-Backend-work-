@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}댓글 관리 - 관리자 - WeTube{% endblock %}
+
+{% block content %}
+  <div class="admin-page admin-comments-page" data-admin-logged-in-only>
+    <div class="admin-header">
+      <div class="admin-header-left">
+        <a href="{{ url_for('admin.index') }}" class="admin-back-link">← 관리자 대시보드</a>
+        <h1 class="admin-title">댓글 관리</h1>
+      </div>
+      <div class="admin-header-actions">
+        <button type="button" class="btn btn--outline" id="admin-logout-btn">로그아웃</button>
+      </div>
+    </div>
+
+    <div class="admin-content">
+      <!-- 검색 / 필터 -->
+      <div class="admin-toolbar">
+        <div class="admin-search">
+          <input type="search" id="comment-search" class="admin-search-input" placeholder="댓글 내용, 작성자 검색">
+          <button type="button" class="btn btn--primary" id="btn-search">검색</button>
+        </div>
+        <div class="admin-filters">
+          <select id="comment-status-filter" class="admin-select">
+            <option value="all">전체 상태</option>
+            <option value="normal">정상</option>
+            <option value="reported">신고됨</option>
+            <option value="deleted">삭제됨</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 댓글 목록 테이블 -->
+      <div class="admin-table-wrap">
+        <table class="admin-table admin-table--comments">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th class="col-video">동영상</th>
+              <th class="col-author">작성자</th>
+              <th class="col-content">댓글 내용</th>
+              <th class="col-date">작성일</th>
+              <th class="col-status">상태</th>
+              <th class="col-actions">관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in range(8) %}
+            <tr>
+              <td class="col-num">{{ i + 1 }}</td>
+              <td class="col-video">
+                <a href="{{ url_for('main.watch', video_id=i+1) }}" class="video-link">샘플 동영상 {{ i + 1 }}</a>
+              </td>
+              <td class="col-author">{{ ['사용자1', '게스트', '테스터', 'aaa', 'lsye', '마로아빠', 'user1', 'guest'][i] }}</td>
+              <td class="col-content">
+                <span class="comment-text-preview">{{ ['좋은 영상이네요!', '잘 봤습니다. 구독했어요!', '프론트엔드 테스트 댓글입니다.', '유익한 정보 감사합니다.', '재미있게 봤어요 👍', '다음 영상 기대할게요!', '추천합니다.', '핵심만 잘 정리했네요.'][i] }}</span>
+              </td>
+              <td class="col-date">2025.{{ '%02d'|format(12 - i) }}.{{ '%02d'|format(10 + i) }}</td>
+              <td class="col-status">
+                <span class="status-badge status-active">정상</span>
+              </td>
+              <td class="col-actions">
+                <button type="button" class="btn-icon btn-icon--danger" title="삭제">🗑️</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 페이지네이션 -->
+      <div class="admin-pagination">
+        <button type="button" class="btn btn--outline btn--small" disabled>이전</button>
+        <span class="pagination-info">1 / 4 페이지</span>
+        <button type="button" class="btn btn--outline btn--small">다음</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-logged-out" data-admin-logged-out-only>
+    <div class="hero">
+      <h1>관리자 권한이 필요합니다</h1>
+      <p>이 페이지에 접근하려면 관리자 계정으로 로그인해야 합니다.</p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn--primary">로그인</a>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/admin-comments-page.js') }}"></script>
+{% endblock %}

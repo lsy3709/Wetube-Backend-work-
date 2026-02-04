@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}샘플 동영상 - WeTube{% endblock %}
+
+{% block content %}
+  <div class="watch-page" data-logged-in-only>
+    <div class="watch-content">
+      <!-- 메인 비디오 영역 -->
+      <div class="watch-main">
+        <!-- 비디오 플레이어 -->
+        <div class="video-player">
+          <div class="video-player-placeholder">
+            <span class="video-player-icon">▶️</span>
+            <p>동영상 플레이어 (프론트엔드 전용)</p>
+          </div>
+        </div>
+
+        <!-- 비디오 정보 -->
+        <div class="video-info">
+          <h1 class="video-title">샘플 동영상 제목</h1>
+          <div class="video-stats">
+            <span class="video-views">조회수 1,234회</span>
+            <span class="video-date">2026. 1. 25.</span>
+          </div>
+
+          <!-- 액션 버튼 -->
+          <div class="video-actions">
+            <div class="video-actions-left">
+              <button type="button" class="action-btn" id="btn-like" title="좋아요">
+                <span class="action-icon">👍</span>
+                <span class="action-count">0</span>
+              </button>
+              <button type="button" class="action-btn" id="btn-dislike" title="싫어요">
+                <span class="action-icon">👎</span>
+                <span class="action-count">0</span>
+              </button>
+              <button type="button" class="action-btn" id="btn-share" title="공유">
+                <span class="action-icon">📤</span>
+                <span class="action-text">공유</span>
+              </button>
+              <button type="button" class="action-btn" id="btn-save" title="저장">
+                <span class="action-icon">📥</span>
+                <span class="action-text">저장</span>
+              </button>
+            </div>
+            <div class="video-actions-right">
+              <button type="button" class="action-btn" id="btn-more" title="더보기">
+                <span class="action-icon">⋯</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 채널 정보 -->
+        <div class="channel-info">
+          <a href="{{ url_for('main.user_profile', username='lsye') }}" class="channel-avatar">
+            <span>L</span>
+          </a>
+          <div class="channel-details">
+            <a href="{{ url_for('main.user_profile', username='lsye') }}" class="channel-name">lsye</a>
+            <div class="channel-subs">구독자 100명</div>
+          </div>
+          <button type="button" class="btn btn--primary" id="btn-subscribe">구독</button>
+        </div>
+
+        <!-- 설명 -->
+        <div class="video-description">
+          <div class="description-content" id="description-content">
+            <p>이것은 샘플 동영상의 설명입니다.</p>
+            <p>프론트엔드 전용으로 구현되었으며, 실제 동영상 정보는 백엔드 구현 후 연동됩니다.</p>
+            <p>해시태그: #WeTube #샘플 #동영상</p>
+          </div>
+          <button type="button" class="description-toggle" id="description-toggle">더보기</button>
+        </div>
+
+        <!-- 댓글 섹션 -->
+        <div class="comments-section">
+          <div class="comments-header">
+            <h2 class="comments-title">댓글 <span id="comments-count">3</span>개</h2>
+            <div class="comments-sort">
+              <button type="button" class="sort-btn active">인기순</button>
+              <button type="button" class="sort-btn">최신순</button>
+            </div>
+          </div>
+
+          <!-- 댓글 작성 -->
+          <div class="comment-form">
+            <div class="comment-avatar">
+              <span>A</span>
+            </div>
+            <div class="comment-input-wrap">
+              <input type="text" id="comment-input" class="comment-input" placeholder="댓글 추가...">
+              <div class="comment-actions" id="comment-actions" style="display: none;">
+                <button type="button" class="btn btn--outline" id="comment-cancel">취소</button>
+                <button type="button" class="btn btn--primary" id="comment-submit">댓글</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 댓글 목록 -->
+          <div class="comments-list" id="comments-list">
+            <div class="comment-item">
+              <div class="comment-avatar"><span>U</span></div>
+              <div class="comment-body">
+                <div class="comment-header">
+                  <span class="comment-author">사용자1</span>
+                  <span class="comment-time">1일 전</span>
+                </div>
+                <p class="comment-text">좋은 영상이네요!</p>
+                <div class="comment-footer">
+                  <button type="button" class="comment-action">👍 5</button>
+                  <button type="button" class="comment-action">👎</button>
+                  <button type="button" class="comment-action">답글</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="comment-item">
+              <div class="comment-avatar"><span>G</span></div>
+              <div class="comment-body">
+                <div class="comment-header">
+                  <span class="comment-author">게스트</span>
+                  <span class="comment-time">2일 전</span>
+                </div>
+                <p class="comment-text">잘 봤습니다. 구독했어요!</p>
+                <div class="comment-footer">
+                  <button type="button" class="comment-action">👍 2</button>
+                  <button type="button" class="comment-action">👎</button>
+                  <button type="button" class="comment-action">답글</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="comment-item">
+              <div class="comment-avatar"><span>T</span></div>
+              <div class="comment-body">
+                <div class="comment-header">
+                  <span class="comment-author">테스터</span>
+                  <span class="comment-time">3일 전</span>
+                </div>
+                <p class="comment-text">프론트엔드 테스트 댓글입니다.</p>
+                <div class="comment-footer">
+                  <button type="button" class="comment-action">👍 1</button>
+                  <button type="button" class="comment-action">👎</button>
+                  <button type="button" class="comment-action">답글</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 추천 동영상 사이드바 -->
+      <aside class="watch-sidebar">
+        <h3 class="sidebar-title">추천 동영상</h3>
+        <div class="related-videos">
+          {% for i in range(10) %}
+          <a href="{{ url_for('main.watch', video_id=i+1) }}" class="related-video-card">
+            <div class="related-video-thumb">📹</div>
+            <div class="related-video-info">
+              <h4 class="related-video-title">추천 동영상 {{ i + 1 }}</h4>
+              <a href="{{ url_for('main.user_profile', username='user' ~ (i+1)) }}" class="related-video-channel" onclick="event.stopPropagation();">채널 {{ i + 1 }}</a>
+              <p class="related-video-meta">조회수 {{ (i + 1) * 100 }}회 · {{ i + 1 }}일 전</p>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="watch-logged-out" data-logged-out-only>
+    <div class="hero">
+      <h1>동영상을 시청하려면 로그인이 필요합니다</h1>
+      <p>로그인하여 동영상을 감상하고 댓글을 남겨보세요.</p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn--primary">로그인</a>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/watch-page.js') }}"></script>
+{% endblock %}

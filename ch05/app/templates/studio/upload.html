@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}동영상 업로드 - Studio - WeTube{% endblock %}
+
+{% block content %}
+  <div class="studio-page" data-logged-in-only>
+    <div class="studio-header">
+      <div class="studio-header-top">
+        <h1 class="studio-title">동영상 업로드</h1>
+        <a href="{{ url_for('studio.index') }}" class="btn btn--outline">취소</a>
+      </div>
+    </div>
+
+    <div class="upload-container">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <p class="auth-msg auth-msg--{{ category }} is-visible" role="alert">{{ message }}</p>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      <p id="upload-msg" class="auth-msg" role="status" aria-live="polite"></p>
+      <form id="upload-form" class="upload-form" method="post" action="{{ url_for('studio.upload') }}" enctype="multipart/form-data">
+        <!-- 동영상 파일 선택 -->
+        <div class="upload-section">
+          <label class="upload-section-title">동영상 파일 <span class="required">*</span></label>
+          <div class="upload-file-area" id="upload-file-area">
+            <input type="file" id="upload-video" name="video" accept="video/*" style="display: none;" required>
+            <div class="upload-file-placeholder" id="upload-file-placeholder">
+              <div class="upload-icon">📹</div>
+              <p class="upload-text">동영상 파일을 선택하거나 여기에 드래그하세요</p>
+              <label for="upload-video" class="btn btn--primary">파일 선택</label>
+              <p class="upload-hint">최대 파일 크기: 2GB</p>
+            </div>
+            <div class="upload-file-selected" id="upload-file-selected" style="display: none;">
+              <div class="upload-file-info">
+                <span class="upload-file-name" id="upload-file-name"></span>
+                <span class="upload-file-size" id="upload-file-size"></span>
+              </div>
+              <button type="button" class="btn btn--outline" id="upload-file-remove">제거</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 제목 -->
+        <div class="upload-section">
+          <label for="upload-title" class="upload-section-title">제목 <span class="required">*</span></label>
+          <input type="text" id="upload-title" name="title" class="upload-input" placeholder="동영상 제목을 입력하세요" maxlength="200" value="{{ title or '' }}" required>
+          <small class="form-hint">최대 200자</small>
+        </div>
+
+        <!-- 설명 -->
+        <div class="upload-section">
+          <label for="upload-description" class="upload-section-title">설명</label>
+          <textarea id="upload-description" name="description" class="upload-textarea" placeholder="동영상에 대한 설명을 입력하세요" rows="6" maxlength="5000">{{ description or '' }}</textarea>
+          <small class="form-hint">최대 5000자</small>
+        </div>
+
+        <!-- 썸네일 -->
+        <div class="upload-section">
+          <label class="upload-section-title">썸네일 (선택)</label>
+          <div class="upload-thumbnail-area">
+            <input type="file" id="upload-thumbnail" name="thumbnail" accept="image/*" style="display: none;">
+            <div class="upload-thumbnail-preview" id="upload-thumbnail-preview">
+              <div class="upload-thumbnail-placeholder" id="upload-thumbnail-placeholder">
+                <span>🖼️</span>
+                <p>썸네일 없음</p>
+              </div>
+              <img id="upload-thumbnail-img" src="" alt="썸네일 미리보기" style="display: none;">
+            </div>
+            <div class="upload-thumbnail-actions">
+              <label for="upload-thumbnail" class="btn btn--outline">썸네일 선택</label>
+              <button type="button" class="btn btn--outline" id="upload-thumbnail-remove" style="display: none;">제거</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 공개 설정 -->
+        <div class="upload-section">
+          <label for="upload-visibility" class="upload-section-title">공개 설정 <span class="required">*</span></label>
+          <select id="upload-visibility" name="visibility" class="upload-select" required>
+            <option value="public">공개</option>
+            <option value="unlisted">일부 공개</option>
+            <option value="private">비공개</option>
+          </select>
+          <small class="form-hint">공개: 누구나 볼 수 있음 | 일부 공개: 링크를 아는 사람만 볼 수 있음 | 비공개: 나만 볼 수 있음</small>
+        </div>
+
+        <!-- 업로드 버튼 -->
+        <div class="upload-actions">
+          <button type="submit" class="btn btn--primary btn--large" id="upload-submit-btn">
+            업로드
+          </button>
+          <a href="{{ url_for('studio.index') }}" class="btn btn--outline btn--large">취소</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="studio-logged-out" data-logged-out-only>
+    <div class="hero">
+      <h1>업로드하려면 로그인이 필요합니다</h1>
+      <p>동영상을 업로드하려면 로그인해주세요.</p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn--primary">로그인</a>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/studio-upload-page.js') }}"></script>
+{% endblock %}

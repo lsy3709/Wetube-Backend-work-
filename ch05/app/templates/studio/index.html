@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Studio - WeTube{% endblock %}
+
+{% block content %}
+  <div class="studio-page" data-logged-in-only>
+    <div class="studio-header">
+      <div class="studio-header-top">
+        <h1 class="studio-title">내 동영상</h1>
+        <a href="{{ url_for('studio.upload') }}" class="btn btn--primary" id="btn-upload">
+          <span>📤</span> 동영상 업로드
+        </a>
+      </div>
+      <div class="studio-stats">
+        <div class="stat-card">
+          <div class="stat-value">0</div>
+          <div class="stat-label">동영상</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">0</div>
+          <div class="stat-label">조회수</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">0</div>
+          <div class="stat-label">구독자</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="studio-toolbar">
+      <div class="studio-search">
+        <input type="search" class="studio-search-input" placeholder="동영상 검색..." aria-label="동영상 검색">
+        <button type="button" class="studio-search-btn" aria-label="검색">🔍</button>
+      </div>
+      <div class="studio-filters">
+        <select class="studio-filter-select">
+          <option value="all">전체</option>
+          <option value="public">공개</option>
+          <option value="unlisted">일부 공개</option>
+          <option value="private">비공개</option>
+        </select>
+        <select class="studio-filter-select">
+          <option value="recent">최신순</option>
+          <option value="popular">인기순</option>
+          <option value="title">제목순</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="studio-content">
+      <div class="studio-empty" id="studio-empty">
+        <div class="studio-empty-icon">📹</div>
+        <h2>동영상이 없습니다</h2>
+        <p>첫 동영상을 업로드하여 시작하세요.</p>
+        <a href="{{ url_for('studio.upload') }}" class="btn btn--primary" id="btn-upload-empty">동영상 업로드</a>
+      </div>
+
+      <div class="studio-video-list" id="studio-video-list" style="display: none;">
+        <table class="video-table">
+          <thead>
+            <tr>
+              <th class="col-thumbnail">동영상</th>
+              <th class="col-title">제목</th>
+              <th class="col-visibility">공개 상태</th>
+              <th class="col-restrictions">제한</th>
+              <th class="col-date">날짜</th>
+              <th class="col-views">조회수</th>
+              <th class="col-comments">댓글</th>
+              <th class="col-likes">좋아요</th>
+              <th class="col-actions">작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 샘플 동영상 (프론트엔드 전용) -->
+            {% for i in range(3) %}
+            <tr class="video-row">
+              <td class="col-thumbnail">
+                <div class="video-thumbnail-small">
+                  <span>📹</span>
+                </div>
+              </td>
+              <td class="col-title">
+                <div class="video-title-cell">
+                  <div class="video-title-text">샘플 동영상 {{ i + 1 }}</div>
+                  <div class="video-title-meta">동영상 ID: {{ i + 1 }}</div>
+                </div>
+              </td>
+              <td class="col-visibility">
+                <span class="badge badge--public">공개</span>
+              </td>
+              <td class="col-restrictions">
+                <span class="badge badge--none">없음</span>
+              </td>
+              <td class="col-date">
+                <div class="video-date">2026-01-25</div>
+              </td>
+              <td class="col-views">0</td>
+              <td class="col-comments">0</td>
+              <td class="col-likes">0</td>
+              <td class="col-actions">
+                <div class="action-menu">
+                  <a href="{{ url_for('studio.edit', video_id=i+1) }}" class="action-btn" title="편집">✏️</a>
+                  <button type="button" class="action-btn" title="삭제">🗑️</button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="studio-logged-out" data-logged-out-only>
+    <div class="hero">
+      <h1>Studio에 접근하려면 로그인이 필요합니다</h1>
+      <p>동영상을 업로드하고 관리하려면 로그인해주세요.</p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn--primary">로그인</a>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/studio-page.js') }}"></script>
+{% endblock %}

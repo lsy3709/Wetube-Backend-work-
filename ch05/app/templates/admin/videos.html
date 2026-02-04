@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}동영상 관리 - 관리자 - WeTube{% endblock %}
+
+{% block content %}
+  <div class="admin-page admin-videos-page" data-admin-logged-in-only>
+    <div class="admin-header">
+      <div class="admin-header-left">
+        <a href="{{ url_for('admin.index') }}" class="admin-back-link">← 관리자 대시보드</a>
+        <h1 class="admin-title">동영상 관리</h1>
+      </div>
+      <div class="admin-header-actions">
+        <button type="button" class="btn btn--outline" id="admin-logout-btn">로그아웃</button>
+      </div>
+    </div>
+
+    <div class="admin-content">
+      <!-- 검색 / 필터 -->
+      <div class="admin-toolbar">
+        <div class="admin-search">
+          <input type="search" id="video-search" class="admin-search-input" placeholder="제목, 업로더 검색">
+          <button type="button" class="btn btn--primary" id="btn-search">검색</button>
+        </div>
+        <div class="admin-filters">
+          <select id="video-visibility-filter" class="admin-select">
+            <option value="all">전체 공개설정</option>
+            <option value="public">공개</option>
+            <option value="unlisted">일부 공개</option>
+            <option value="private">비공개</option>
+          </select>
+          <select id="video-status-filter" class="admin-select">
+            <option value="all">전체 상태</option>
+            <option value="normal">정상</option>
+            <option value="reported">신고됨</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 동영상 목록 테이블 -->
+      <div class="admin-table-wrap">
+        <table class="admin-table admin-table--videos">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th class="col-thumb">썸네일</th>
+              <th class="col-title">제목</th>
+              <th class="col-uploader">업로더</th>
+              <th class="col-views">조회수</th>
+              <th class="col-date">업로드일</th>
+              <th class="col-visibility">공개설정</th>
+              <th class="col-status">상태</th>
+              <th class="col-actions">관리</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in range(8) %}
+            <tr>
+              <td class="col-num">{{ i + 1 }}</td>
+              <td class="col-thumb">
+                <div class="video-thumb-small">📹</div>
+              </td>
+              <td class="col-title">
+                <a href="{{ url_for('main.watch', video_id=i+1) }}" class="video-title-link">샘플 동영상 {{ i + 1 }}</a>
+              </td>
+              <td class="col-uploader">{{ ['lsye', 'aaa', '관리자', '마로아빠', '서준태양파파', 'user1', 'test', 'guest'][i] }}</td>
+              <td class="col-views">{{ (i + 1) * 100 }}회</td>
+              <td class="col-date">2025.{{ '%02d'|format(12 - i) }}.{{ '%02d'|format(15 + i) }}</td>
+              <td class="col-visibility">
+                <span class="status-badge status-public">공개</span>
+              </td>
+              <td class="col-status">
+                <span class="status-badge status-active">정상</span>
+              </td>
+              <td class="col-actions">
+                <a href="{{ url_for('studio.edit', video_id=i+1) }}" class="btn-icon" title="수정">✏️</a>
+                <button type="button" class="btn-icon btn-icon--danger" title="삭제">🗑️</button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 페이지네이션 -->
+      <div class="admin-pagination">
+        <button type="button" class="btn btn--outline btn--small" disabled>이전</button>
+        <span class="pagination-info">1 / 3 페이지</span>
+        <button type="button" class="btn btn--outline btn--small">다음</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="admin-logged-out" data-admin-logged-out-only>
+    <div class="hero">
+      <h1>관리자 권한이 필요합니다</h1>
+      <p>이 페이지에 접근하려면 관리자 계정으로 로그인해야 합니다.</p>
+      <a href="{{ url_for('auth.login') }}" class="btn btn--primary">로그인</a>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/admin-videos-page.js') }}"></script>
+{% endblock %}
