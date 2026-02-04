@@ -3,14 +3,9 @@
  */
 
 (function () {
-  const STORAGE_KEY = 'wetube_logged_in';
   const MAX_THUMBNAIL_SIZE = 5 * 1024 * 1024; // 5MB
 
-  // 로그인 상태 확인
-  if (sessionStorage.getItem(STORAGE_KEY) !== '1') {
-    return;
-  }
-
+  // 로그인 미연동: 편집 시 서버에서 config.DEFAULT_USER_ID 사용
   const form = document.getElementById('edit-form');
   const thumbnailInput = document.getElementById('edit-thumbnail');
   const thumbnailPlaceholder = document.getElementById('edit-thumbnail-placeholder');

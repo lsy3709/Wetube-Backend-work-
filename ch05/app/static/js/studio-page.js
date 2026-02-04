@@ -3,18 +3,12 @@
  */
 
 (function () {
-  const STORAGE_KEY = 'wetube_logged_in';
   const uploadBtn = document.getElementById('btn-upload');
   const uploadBtnEmpty = document.getElementById('btn-upload-empty');
   const emptyState = document.getElementById('studio-empty');
   const videoList = document.getElementById('studio-video-list');
 
-  // 로그인 상태 확인
-  if (sessionStorage.getItem(STORAGE_KEY) !== '1') {
-    // 로그인하지 않은 경우는 base.html의 data-logged-out-only가 처리
-    return;
-  }
-
+  // 로그인 미연동: Studio는 로그인 없이 사용 가능 (업로드 시 서버에서 DEFAULT_USER_ID 사용)
   // 업로드 버튼은 링크로 처리 (studio/upload.html로 이동)
 
   // 동영상 목록 표시/숨김 (샘플 데이터가 있으면 목록 표시)

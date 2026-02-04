@@ -3,15 +3,10 @@
  */
 
 (function () {
-  const STORAGE_KEY = "wetube_logged_in";
   const MAX_VIDEO_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
   const MAX_THUMBNAIL_SIZE = 5 * 1024 * 1024; // 5MB
 
-  // 로그인 상태 확인
-  if (sessionStorage.getItem(STORAGE_KEY) !== "1") {
-    return;
-  }
-
+  // 로그인 미연동: 업로드 시 서버에서 config.DEFAULT_USER_ID 사용
   const form = document.getElementById("upload-form");
   const videoInput = document.getElementById("upload-video");
   const videoArea = document.getElementById("upload-file-area");

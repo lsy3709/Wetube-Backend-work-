@@ -3,7 +3,8 @@
 {% block title %}동영상 업로드 - Studio - WeTube{% endblock %}
 
 {% block content %}
-  <div class="studio-page" data-logged-in-only>
+  <!-- 로그인 미연동: 업로드 시 config.DEFAULT_USER_ID 사용 -->
+  <div class="studio-page">
     <div class="studio-header">
       <div class="studio-header-top">
         <h1 class="studio-title">동영상 업로드</h1>
@@ -94,14 +95,6 @@
           <a href="{{ url_for('studio.index') }}" class="btn btn--outline btn--large">취소</a>
         </div>
       </form>
-    </div>
-  </div>
-
-  <div class="studio-logged-out" data-logged-out-only>
-    <div class="hero">
-      <h1>업로드하려면 로그인이 필요합니다</h1>
-      <p>동영상을 업로드하려면 로그인해주세요.</p>
-      <a href="{{ url_for('auth.login') }}" class="btn btn--primary">로그인</a>
     </div>
   </div>
 {% endblock %}
