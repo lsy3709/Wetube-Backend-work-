@@ -1,52 +1,75 @@
-"""Flask 앱 팩토리 – 업로드·DB 포함."""
+"""
+Flask 앱 팩토리 – 업로드·DB 포함.
+
+기능: create_app()으로 앱 인스턴스를 생성하고,
+      설정(config), DB, 업로드 폴더, Blueprint 등록, 테이블·기본 유저 생성을 수행합니다.
+"""
 
 import os
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 
-# DB 확장 (create_app에서 init_app로 초기화)
+# ---------------------------------------------------------------------------
+# DB 확장 객체 (모듈 레벨)
+# 기능: Flask-SQLAlchemy 확장. create_app() 내에서 init_app(app)으로 앱에 연결합니다.
+#       라우트·모델에서 from app import db 로 사용합니다.
+# ---------------------------------------------------------------------------
 db = SQLAlchemy()
 
 
 def create_app():
+    """
+    앱 팩토리 함수.
+    기능: Flask 앱 생성 → 설정 → 폴더 생성 → DB·Blueprint 등록 → 테이블·기본 유저 생성 후 앱 반환.
+    """
+    # ----- 1) Flask 앱 인스턴스 생성 -----
     app = Flask(__name__)
 
-    # 프로젝트 루트 기준 업로드 경로
+    # ----- 2) 프로젝트 루트·업로드 경로 계산 -----
+    # 기능: __file__ 기준으로 app 폴더의 상위(ch05)를 project_root로 두고,
+    #       비디오·썸네일 저장 경로를 만듭니다.
     project_root = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
     video_folder = os.path.join(project_root, "uploads", "videos")
     thumbnail_folder = os.path.join(project_root, "uploads", "thumbnails")
 
+    # ----- 3) 설정(config) 등록 -----
+    # 기능: DB URI, 업로드 폴더·용량·확장자, 기본 user_id 등을 앱 설정에 넣습니다.
+    #       라우트에서 current_app.config["VIDEO_FOLDER"] 등으로 읽습니다.
     app.config.from_mapping(
         SECRET_KEY="dev-frontend-only",
-        # DB (SQLite)
+        # DB: 환경변수 DATABASE_URL 없으면 SQLite (instance/wetube.db)
         SQLALCHEMY_DATABASE_URI=os.environ.get(
             "DATABASE_URL",
             f"sqlite:///{os.path.join(project_root, 'instance', 'wetube.db')}",
         ),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        # 업로드 폴더 (config에 저장)
+        # 업로드 폴더 (절대 경로)
         VIDEO_FOLDER=video_folder,
         THUMBNAIL_FOLDER=thumbnail_folder,
         # 업로드 제한 (바이트)
         MAX_VIDEO_SIZE=2 * 1024 * 1024 * 1024,  # 2GB
         MAX_THUMBNAIL_SIZE=5 * 1024 * 1024,  # 5MB
-        # 허용 확장자 (소문자)
+        # 허용 확장자 (set, 소문자로 비교)
         ALLOWED_VIDEO_EXTENSIONS={"mp4", "webm", "mov"},
         ALLOWED_THUMBNAIL_EXTENSIONS={"jpg", "jpeg", "png", "gif", "webp"},
-        # 업로드 시 사용할 기본 user_id (로그인 미연동 시)
+        # 로그인 미연동 시 업로드에 사용할 user_id (기본 1)
         DEFAULT_USER_ID=1,
     )
 
-    # 업로드 폴더 생성
+    # ----- 4) 업로드·DB용 디렉터리 생성 -----
+    # 기능: 폴더가 없으면 생성. exist_ok=True 로 이미 있어도 에러 없음.
     os.makedirs(app.config["VIDEO_FOLDER"], exist_ok=True)
     os.makedirs(app.config["THUMBNAIL_FOLDER"], exist_ok=True)
-    # DB용 instance 폴더
     instance_path = os.path.join(project_root, "instance")
     os.makedirs(instance_path, exist_ok=True)
 
+    # ----- 5) DB 확장을 현재 앱에 연결 -----
+    # 기능: db.Model, db.session, db.create_all() 등을 이 앱 컨텍스트에서 사용 가능하게 함.
     db.init_app(app)
 
+    # ----- 6) Blueprint 등록 -----
+    # 기능: URL 접두사별로 라우트를 묶어 등록. / → main, /auth → auth, /studio → studio, /admin → admin.
     from app.routes.main import main_bp
     from app.routes.auth import auth_bp
     from app.routes.studio import studio_bp
@@ -57,13 +80,14 @@ def create_app():
     app.register_blueprint(studio_bp)
     app.register_blueprint(admin_bp)
 
-    # 모델 등록 후 테이블 생성
+    # ----- 7) 모델 로드 후 테이블·기본 유저 생성 -----
+    # 기능: User, Video 모델을 로드한 뒤 create_all()로 테이블 생성.
+    #       user_id=1 이 없으면 default 유저를 만들어 업로드 시 DEFAULT_USER_ID 사용 가능하게 함.
     from app import models  # noqa: F401
     from app.models import User
 
     with app.app_context():
         db.create_all()
-        # 업로드용 기본 사용자 없으면 생성 (user_id=1)
         if User.query.get(1) is None:
             default_user = User(
                 username="default",
@@ -76,10 +100,16 @@ def create_app():
     return app
 
 
-# flask run / FLASK_APP=app 사용 시 동일 앱 로드
+# ---------------------------------------------------------------------------
+# 모듈 레벨 앱 인스턴스
+# 기능: flask run / FLASK_APP=app 일 때 이 app 객체가 로드됩니다.
+# ---------------------------------------------------------------------------
 app = create_app()
 
-# 직접 실행 시 (python -m app 또는 python app/__init__.py)
+# ---------------------------------------------------------------------------
+# 직접 실행 시 진입점 (python -m app 또는 python app/__init__.py)
+# 기능: 개발 서버를 127.0.0.1:5000 에서 기동합니다.
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     print("등록된 라우트: / /auth/login /auth/register /auth/profile /studio ...")
     print("중요: 5000 포트를 쓰는 다른 프로그램(기존 Flask 등)이 있으면 먼저 종료하세요.")
