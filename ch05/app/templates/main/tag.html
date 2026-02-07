@@ -4,22 +4,19 @@
 
 {% block content %}
   <div class="tag-page" data-logged-in-only>
-    <!-- 인기 태그 -->
+    <!-- 인기 태그 (DB 연동) -->
+    {% if popular_tags %}
     <div class="popular-tags-section">
       <h2 class="popular-tags-title">인기 태그</h2>
       <div class="popular-tags">
-        <a href="{{ url_for('main.tag', tag='cafe') }}" class="tag-pill {% if tag == 'cafe' %}active{% endif %}">#cafe</a>
-        <a href="{{ url_for('main.tag', tag='music') }}" class="tag-pill {% if tag == 'music' %}active{% endif %}">#music</a>
-        <a href="{{ url_for('main.tag', tag='vlog') }}" class="tag-pill {% if tag == 'vlog' %}active{% endif %}">#vlog</a>
-        <a href="{{ url_for('main.tag', tag='game') }}" class="tag-pill {% if tag == 'game' %}active{% endif %}">#game</a>
-        <a href="{{ url_for('main.tag', tag='travel') }}" class="tag-pill {% if tag == 'travel' %}active{% endif %}">#travel</a>
-        <a href="{{ url_for('main.tag', tag='food') }}" class="tag-pill {% if tag == 'food' %}active{% endif %}">#food</a>
-        <a href="{{ url_for('main.tag', tag='tech') }}" class="tag-pill {% if tag == 'tech' %}active{% endif %}">#tech</a>
-        <a href="{{ url_for('main.tag', tag='daily') }}" class="tag-pill {% if tag == 'daily' %}active{% endif %}">#daily</a>
+        {% for t in popular_tags %}
+        <a href="{{ url_for('main.tag', tag_name=t.name) }}" class="tag-pill {% if tag == t.name %}active{% endif %}">#{{ t.name }}</a>
+        {% endfor %}
       </div>
     </div>
+    {% endif %}
 
-    <!-- 태그별 영상 리스트 -->
+    <!-- 태그별 영상 리스트 (DB 연동) -->
     <div class="tag-results">
       <div class="tag-results-header">
         <h1 class="tag-results-title">#{{ tag }}</h1>
@@ -27,16 +24,24 @@
       </div>
 
       <div class="tag-video-grid">
-        {% for i in range(12) %}
+        {% for video in videos or [] %}
         <article class="video-card">
-          <a href="{{ url_for('main.watch', video_id=i+1) }}" class="video-card-link">
-            <div class="video-card-thumb">📹</div>
-            <h3 class="video-card-title">{{ tag }} 관련 동영상 {{ i + 1 }}</h3>
+          <a href="{{ url_for('main.watch', video_id=video.id) }}" class="video-card-link">
+            <div class="video-card-thumb">
+              {% if video.thumbnail_path %}
+              <img src="{{ url_for('main.media_thumbnail', filename=video.thumbnail_path) }}" alt="" class="video-card-thumb-img">
+              {% else %}
+              <span>📹</span>
+              {% endif %}
+            </div>
+            <h3 class="video-card-title">{{ video.title }}</h3>
           </a>
-          <a href="{{ url_for('main.user_profile', username='user' ~ (i+1)) }}" class="video-card-channel">채널 {{ i + 1 }}</a>
-          <p class="video-card-meta">조회수 {{ (i + 1) * 50 }}회</p>
-          <p class="video-card-tag">#{{ tag }}</p>
+          <a href="{{ url_for('main.user_profile', username='default') }}" class="video-card-channel">default</a>
+          <p class="video-card-meta">조회수 {{ video.views }}회</p>
+          <a href="{{ url_for('main.tag', tag_name=tag) }}" class="video-card-tag">#{{ tag }}</a>
         </article>
+        {% else %}
+        <p class="tag-empty">"#{{ tag }}" 태그가 붙은 동영상이 없습니다.</p>
         {% endfor %}
       </div>
     </div>

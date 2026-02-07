@@ -38,28 +38,33 @@
 
       <!-- 동영상 결과 -->
       <div class="search-results-list" id="results-list" data-filter="all">
-        {% for i in range(10) %}
+        {% for video in videos or [] %}
         <div class="search-result-item" data-type="video">
-          <a href="{{ url_for('main.watch', video_id=i+1) }}" class="result-thumb">
+          <a href="{{ url_for('main.watch', video_id=video.id) }}" class="result-thumb">
+            {% if video.thumbnail_path %}
+            <img src="{{ url_for('main.media_thumbnail', filename=video.thumbnail_path) }}" alt="" class="result-thumb-img">
+            {% else %}
             <div class="result-thumb-placeholder">📹</div>
-            <span class="result-duration">10:{{ '%02d'|format(i+1) }}</span>
+            {% endif %}
           </a>
           <div class="result-info">
             <h3 class="result-title">
-              <a href="{{ url_for('main.watch', video_id=i+1) }}">{{ query }} 관련 동영상 {{ i + 1 }}</a>
+              <a href="{{ url_for('main.watch', video_id=video.id) }}">{{ video.title }}</a>
             </h3>
             <div class="result-meta">
-              <span class="result-views">조회수 {{ (i + 1) * 100 }}회</span>
-              <span class="result-date">· {{ i + 1 }}일 전</span>
+              <span class="result-views">조회수 {{ video.views }}회</span>
+              <span class="result-date">· {{ video.created_at.strftime('%Y-%m-%d') if video.created_at else '' }}</span>
             </div>
             <div class="result-channel">
-              <a href="{{ url_for('main.user_profile', username='user' ~ (i+1)) }}" class="channel-link">채널 {{ i + 1 }}</a>
+              <a href="{{ url_for('main.user_profile', username='default') }}" class="channel-link">default</a>
             </div>
             <p class="result-description">
-              "{{ query }}"에 대한 검색 결과입니다. 이것은 샘플 동영상 설명입니다. 프론트엔드 전용으로 구현되었습니다.
+              {{ (video.description or '')[:150] }}{% if video.description and video.description|length > 150 %}...{% endif %}
             </p>
           </div>
         </div>
+        {% else %}
+        <p class="search-no-results">"{{ query }}"에 대한 동영상 결과가 없습니다.</p>
         {% endfor %}
       </div>
 

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}샘플 동영상 - WeTube{% endblock %}
+{% block title %}{{ video.title }} - WeTube{% endblock %}
 
 {% block content %}
   <div class="watch-page" data-logged-in-only>
@@ -9,18 +9,18 @@
       <div class="watch-main">
         <!-- 비디오 플레이어 -->
         <div class="video-player">
-          <div class="video-player-placeholder">
-            <span class="video-player-icon">▶️</span>
-            <p>동영상 플레이어 (프론트엔드 전용)</p>
-          </div>
+          <video controls class="video-player-el" poster="{% if video.thumbnail_path %}{{ url_for('main.media_thumbnail', filename=video.thumbnail_path) }}{% endif %}">
+            <source src="{{ url_for('main.media_video', filename=video.video_path) }}" type="video/mp4">
+            브라우저가 동영상을 재생할 수 없습니다.
+          </video>
         </div>
 
         <!-- 비디오 정보 -->
         <div class="video-info">
-          <h1 class="video-title">샘플 동영상 제목</h1>
+          <h1 class="video-title">{{ video.title }}</h1>
           <div class="video-stats">
-            <span class="video-views">조회수 1,234회</span>
-            <span class="video-date">2026. 1. 25.</span>
+            <span class="video-views">조회수 {{ video.views }}회</span>
+            <span class="video-date">{{ video.created_at.strftime('%Y. %m. %d.') if video.created_at else '' }}</span>
           </div>
 
           <!-- 액션 버튼 -->
@@ -53,22 +53,33 @@
 
         <!-- 채널 정보 -->
         <div class="channel-info">
-          <a href="{{ url_for('main.user_profile', username='lsye') }}" class="channel-avatar">
-            <span>L</span>
+          <a href="{{ url_for('main.user_profile', username=channel_name) }}" class="channel-avatar">
+            <span>{{ (channel_name or 'D')[0]|upper }}</span>
           </a>
           <div class="channel-details">
-            <a href="{{ url_for('main.user_profile', username='lsye') }}" class="channel-name">lsye</a>
-            <div class="channel-subs">구독자 100명</div>
+            <a href="{{ url_for('main.user_profile', username=channel_name) }}" class="channel-name">{{ channel_name }}</a>
+            <div class="channel-subs">구독자 0명</div>
           </div>
           <button type="button" class="btn btn--primary" id="btn-subscribe">구독</button>
         </div>
 
+        <!-- 태그 (DB 연동) -->
+        {% if video.tags %}
+        <div class="video-tags">
+          {% for t in video.tags %}
+          <a href="{{ url_for('main.tag', tag_name=t.name) }}" class="tag-pill tag-pill--small">#{{ t.name }}</a>
+          {% endfor %}
+        </div>
+        {% endif %}
+
         <!-- 설명 -->
         <div class="video-description">
           <div class="description-content" id="description-content">
-            <p>이것은 샘플 동영상의 설명입니다.</p>
-            <p>프론트엔드 전용으로 구현되었으며, 실제 동영상 정보는 백엔드 구현 후 연동됩니다.</p>
-            <p>해시태그: #WeTube #샘플 #동영상</p>
+            {% if video.description %}
+            <p>{{ video.description }}</p>
+            {% else %}
+            <p>설명이 없습니다.</p>
+            {% endif %}
           </div>
           <button type="button" class="description-toggle" id="description-toggle">더보기</button>
         </div>
@@ -150,19 +161,27 @@
         </div>
       </div>
 
-      <!-- 추천 동영상 사이드바 -->
+      <!-- 추천 동영상 사이드바 (DB 연동) -->
       <aside class="watch-sidebar">
         <h3 class="sidebar-title">추천 동영상</h3>
         <div class="related-videos">
-          {% for i in range(10) %}
-          <a href="{{ url_for('main.watch', video_id=i+1) }}" class="related-video-card">
-            <div class="related-video-thumb">📹</div>
+          {% for v in related_videos or [] %}
+          <a href="{{ url_for('main.watch', video_id=v.id) }}" class="related-video-card">
+            <div class="related-video-thumb">
+              {% if v.thumbnail_path %}
+              <img src="{{ url_for('main.media_thumbnail', filename=v.thumbnail_path) }}" alt="" class="related-video-thumb-img">
+              {% else %}
+              <span>📹</span>
+              {% endif %}
+            </div>
             <div class="related-video-info">
-              <h4 class="related-video-title">추천 동영상 {{ i + 1 }}</h4>
-              <a href="{{ url_for('main.user_profile', username='user' ~ (i+1)) }}" class="related-video-channel" onclick="event.stopPropagation();">채널 {{ i + 1 }}</a>
-              <p class="related-video-meta">조회수 {{ (i + 1) * 100 }}회 · {{ i + 1 }}일 전</p>
+              <h4 class="related-video-title">{{ v.title }}</h4>
+              <a href="{{ url_for('main.user_profile', username='default') }}" class="related-video-channel" onclick="event.stopPropagation();">default</a>
+              <p class="related-video-meta">조회수 {{ v.views }}회</p>
             </div>
           </a>
+          {% else %}
+          <p class="related-empty">추천 동영상이 없습니다.</p>
           {% endfor %}
         </div>
       </aside>

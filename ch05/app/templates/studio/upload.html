@@ -57,6 +57,34 @@
           <small class="form-hint">최대 5000자</small>
         </div>
 
+        <!-- 카테고리 -->
+        <div class="upload-section">
+          <label for="upload-category" class="upload-section-title">카테고리</label>
+          <select id="upload-category" name="category" class="upload-select">
+            <option value="" {% if not category %}selected{% endif %}>선택 안함</option>
+            <option value="entertainment" {% if category == 'entertainment' %}selected{% endif %}>엔터테인먼트</option>
+            <option value="music" {% if category == 'music' %}selected{% endif %}>음악</option>
+            <option value="sports" {% if category == 'sports' %}selected{% endif %}>스포츠</option>
+            <option value="game" {% if category == 'game' %}selected{% endif %}>게임</option>
+            <option value="education" {% if category == 'education' %}selected{% endif %}>교육</option>
+            <option value="tech" {% if category == 'tech' %}selected{% endif %}>기술</option>
+            <option value="comedy" {% if category == 'comedy' %}selected{% endif %}>코미디</option>
+            <option value="travel" {% if category == 'travel' %}selected{% endif %}>여행</option>
+            <option value="food" {% if category == 'food' %}selected{% endif %}>음식</option>
+            <option value="lifestyle" {% if category == 'lifestyle' %}selected{% endif %}>라이프스타일</option>
+            <option value="news" {% if category == 'news' %}selected{% endif %}>뉴스</option>
+            <option value="etc" {% if category == 'etc' %}selected{% endif %}>기타</option>
+          </select>
+          <small class="form-hint">홈 화면 카테고리 필터와 연동됩니다.</small>
+        </div>
+
+        <!-- 태그 -->
+        <div class="upload-section">
+          <label for="upload-tags" class="upload-section-title">태그</label>
+          <input type="text" id="upload-tags" name="tags" class="upload-input" placeholder="태그1, 태그2, 태그3 (콤마로 구분)" value="{{ tags or '' }}">
+          <small class="form-hint">콤마로 구분하여 입력 (예: Python, Flask, 튜토리얼)</small>
+        </div>
+
         <!-- 썸네일 -->
         <div class="upload-section">
           <label class="upload-section-title">썸네일 (선택)</label>

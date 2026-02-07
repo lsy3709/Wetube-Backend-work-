@@ -1,8 +1,9 @@
 """
 모델 패키지 – DB 모델 내보내기.
-from app.models import User, Video 로 사용.
+from app.models import User, Video, Tag 로 사용.
 """
+from app.models.tag import Tag
 from app.models.user import User
 from app.models.video import Video
 
-__all__ = ["User", "Video"]
+__all__ = ["User", "Video", "Tag"]

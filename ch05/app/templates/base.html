@@ -8,10 +8,7 @@
 </head>
 <body>
   <header class="header {% block header_class %}header--with-sidebar{% endblock %}" id="main-header">
-    <a href="{{ url_for('main.index') }}" class="logo">
-      <span class="logo-icon"></span>
-      WeTube
-    </a>
+    <a href="{{ url_for('main.index') }}" class="logo">WeTube</a>
     <form class="search-wrap" method="get" action="{{ url_for('main.search') }}">
       <input type="search" name="q" class="search-input" placeholder="검색" aria-label="검색" value="{{ request.args.get('q', '') }}">
       <button type="submit" class="search-btn" aria-label="검색">

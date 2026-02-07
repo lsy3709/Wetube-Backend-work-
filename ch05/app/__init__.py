@@ -93,7 +93,7 @@ def create_app():
         # 등록된 모델(User, Video) 기준으로 테이블 생성. 없으면 생성, 있으면 스킵
         db.create_all()
         # user_id=1 이 없으면 업로드 시 DEFAULT_USER_ID(1)를 쓸 수 없으므로 기본 유저 생성
-        if User.query.get(1) is None:
+        if db.session.get(User, 1) is None:
             # 기본 유저 인스턴스 (실제 로그인·비밀번호 검증 없음)
             default_user = User(
                 username="default",

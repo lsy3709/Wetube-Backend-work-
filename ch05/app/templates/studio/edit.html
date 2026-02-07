@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}동영상 수정 - Studio - WeTube{% endblock %}
+{% block title %}{{ video.title }} 수정 - Studio - WeTube{% endblock %}
 
 {% block content %}
   <!-- 로그인 미연동: 편집 시 config.DEFAULT_USER_ID 사용 -->
@@ -14,17 +14,21 @@
 
     <div class="upload-container">
       <p id="edit-msg" class="auth-msg" role="status" aria-live="polite"></p>
-      <form id="edit-form" class="upload-form" method="post" action="#" enctype="multipart/form-data">
+      <form id="edit-form" class="upload-form" method="post" action="{{ url_for('studio.edit', video_id=video.id) }}" enctype="multipart/form-data">
         <!-- 현재 동영상 미리보기 -->
         <div class="upload-section">
           <label class="upload-section-title">현재 동영상</label>
           <div class="edit-video-preview">
             <div class="edit-video-thumbnail">
+              {% if video.thumbnail_path %}
+              <img src="{{ url_for('main.media_thumbnail', filename=video.thumbnail_path) }}" alt="썸네일" class="edit-video-thumb-img">
+              {% else %}
               <span>📹</span>
+              {% endif %}
             </div>
             <div class="edit-video-info">
-              <p class="edit-video-filename">sample_video.mp4</p>
-              <p class="edit-video-meta">업로드 날짜: 2026-01-25 | 조회수: 0회</p>
+              <p class="edit-video-filename">{{ video.video_path or '동영상 파일' }}</p>
+              <p class="edit-video-meta">업로드 날짜: {{ video.created_at.strftime('%Y-%m-%d') if video.created_at else '-' }} | 조회수: {{ video.views }}회</p>
             </div>
           </div>
         </div>
@@ -32,15 +36,43 @@
         <!-- 제목 -->
         <div class="upload-section">
           <label for="edit-title" class="upload-section-title">제목 <span class="required">*</span></label>
-          <input type="text" id="edit-title" name="title" class="upload-input" placeholder="동영상 제목을 입력하세요" maxlength="100" value="샘플 동영상" required>
-          <small class="form-hint">최대 100자</small>
+          <input type="text" id="edit-title" name="title" class="upload-input" placeholder="동영상 제목을 입력하세요" maxlength="200" value="{{ video.title }}" required>
+          <small class="form-hint">최대 200자</small>
         </div>
 
         <!-- 설명 -->
         <div class="upload-section">
           <label for="edit-description" class="upload-section-title">설명</label>
-          <textarea id="edit-description" name="description" class="upload-textarea" placeholder="동영상에 대한 설명을 입력하세요" rows="6" maxlength="5000">샘플 동영상 설명입니다.</textarea>
+          <textarea id="edit-description" name="description" class="upload-textarea" placeholder="동영상에 대한 설명을 입력하세요" rows="6" maxlength="5000">{{ video.description or '' }}</textarea>
           <small class="form-hint">최대 5000자</small>
+        </div>
+
+        <!-- 카테고리 -->
+        <div class="upload-section">
+          <label for="edit-category" class="upload-section-title">카테고리</label>
+          <select id="edit-category" name="category" class="upload-select">
+            <option value="" {% if not (video.category or '') %}selected{% endif %}>선택 안함</option>
+            <option value="entertainment" {% if video.category == 'entertainment' %}selected{% endif %}>엔터테인먼트</option>
+            <option value="music" {% if video.category == 'music' %}selected{% endif %}>음악</option>
+            <option value="sports" {% if video.category == 'sports' %}selected{% endif %}>스포츠</option>
+            <option value="game" {% if video.category == 'game' %}selected{% endif %}>게임</option>
+            <option value="education" {% if video.category == 'education' %}selected{% endif %}>교육</option>
+            <option value="tech" {% if video.category == 'tech' %}selected{% endif %}>기술</option>
+            <option value="comedy" {% if video.category == 'comedy' %}selected{% endif %}>코미디</option>
+            <option value="travel" {% if video.category == 'travel' %}selected{% endif %}>여행</option>
+            <option value="food" {% if video.category == 'food' %}selected{% endif %}>음식</option>
+            <option value="lifestyle" {% if video.category == 'lifestyle' %}selected{% endif %}>라이프스타일</option>
+            <option value="news" {% if video.category == 'news' %}selected{% endif %}>뉴스</option>
+            <option value="etc" {% if video.category == 'etc' %}selected{% endif %}>기타</option>
+          </select>
+          <small class="form-hint">홈 화면 카테고리 필터와 연동됩니다.</small>
+        </div>
+
+        <!-- 태그 -->
+        <div class="upload-section">
+          <label for="edit-tags" class="upload-section-title">태그</label>
+          <input type="text" id="edit-tags" name="tags" class="upload-input" placeholder="태그1, 태그2, 태그3 (콤마로 구분)" value="{{ video.tags|map(attribute='name')|join(', ') if video.tags else '' }}">
+          <small class="form-hint">콤마로 구분하여 입력 (예: Python, Flask, 튜토리얼)</small>
         </div>
 
         <!-- 썸네일 -->

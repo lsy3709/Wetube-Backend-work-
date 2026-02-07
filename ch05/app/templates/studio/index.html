@@ -14,11 +14,11 @@
       </div>
       <div class="studio-stats">
         <div class="stat-card">
-          <div class="stat-value">0</div>
+          <div class="stat-value">{{ video_count|default(0) }}</div>
           <div class="stat-label">동영상</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">0</div>
+          <div class="stat-value">{{ total_views|default(0) }}</div>
           <div class="stat-label">조회수</div>
         </div>
         <div class="stat-card">
@@ -49,14 +49,15 @@
     </div>
 
     <div class="studio-content">
+      {% if not videos %}
       <div class="studio-empty" id="studio-empty">
         <div class="studio-empty-icon">📹</div>
         <h2>동영상이 없습니다</h2>
         <p>첫 동영상을 업로드하여 시작하세요.</p>
         <a href="{{ url_for('studio.upload') }}" class="btn btn--primary" id="btn-upload-empty">동영상 업로드</a>
       </div>
-
-      <div class="studio-video-list" id="studio-video-list" style="display: none;">
+      {% else %}
+      <div class="studio-video-list" id="studio-video-list">
         <table class="video-table">
           <thead>
             <tr>
@@ -72,18 +73,21 @@
             </tr>
           </thead>
           <tbody>
-            <!-- 샘플 동영상 (프론트엔드 전용) -->
-            {% for i in range(3) %}
+            {% for video in videos %}
             <tr class="video-row">
               <td class="col-thumbnail">
                 <div class="video-thumbnail-small">
+                  {% if video.thumbnail_path %}
+                  <img src="{{ url_for('main.media_thumbnail', filename=video.thumbnail_path) }}" alt="" class="video-thumb-img">
+                  {% else %}
                   <span>📹</span>
+                  {% endif %}
                 </div>
               </td>
               <td class="col-title">
                 <div class="video-title-cell">
-                  <div class="video-title-text">샘플 동영상 {{ i + 1 }}</div>
-                  <div class="video-title-meta">동영상 ID: {{ i + 1 }}</div>
+                  <a href="{{ url_for('main.watch', video_id=video.id) }}" class="video-title-text">{{ video.title }}</a>
+                  <div class="video-title-meta">동영상 ID: {{ video.id }}</div>
                 </div>
               </td>
               <td class="col-visibility">
@@ -93,14 +97,14 @@
                 <span class="badge badge--none">없음</span>
               </td>
               <td class="col-date">
-                <div class="video-date">2026-01-25</div>
+                <div class="video-date">{{ video.created_at.strftime('%Y-%m-%d') if video.created_at else '-' }}</div>
               </td>
-              <td class="col-views">0</td>
+              <td class="col-views">{{ video.views }}</td>
               <td class="col-comments">0</td>
-              <td class="col-likes">0</td>
+              <td class="col-likes">{{ video.likes }}</td>
               <td class="col-actions">
                 <div class="action-menu">
-                  <a href="{{ url_for('studio.edit', video_id=i+1) }}" class="action-btn" title="편집">✏️</a>
+                  <a href="{{ url_for('studio.edit', video_id=video.id) }}" class="action-btn" title="편집">✏️</a>
                   <button type="button" class="action-btn" title="삭제">🗑️</button>
                 </div>
               </td>
@@ -109,6 +113,7 @@
           </tbody>
         </table>
       </div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

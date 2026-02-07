@@ -1,30 +1,89 @@
 """
 비디오 모델 – videos 테이블.
 video_path / thumbnail_path 는 파일명만 저장, 실제 파일은 config 폴더에 저장됨.
+Video ↔ Tag N:M 관계 (video_tags 중간 테이블).
 """
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app import db
+
+# datetime.utcnow() deprecated → datetime.now(timezone.utc) 사용
+def _utc_now():
+    return datetime.now(timezone.utc)
+
+
+# Video ↔ Tag N:M 중간 테이블 (table.sql의 video_tags)
+video_tags = db.Table(
+    "video_tags",
+    db.Column("video_id", db.Integer, db.ForeignKey("videos.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("tag_id", db.Integer, db.ForeignKey("tags.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("created_at", db.DateTime, default=_utc_now),
+)
 
 
 class Video(db.Model):
     """업로드된 동영상 정보."""
 
+    # 테이블명
     __tablename__ = "videos"
 
+    # ----- 기본 키 -----
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    title = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text, nullable=True)
-    # 저장된 파일명 (UUID.ext). 실제 경로는 config["VIDEO_FOLDER"] 등
-    video_path = db.Column(db.String(500), nullable=False)
-    thumbnail_path = db.Column(db.String(500), nullable=True)
-    category = db.Column(db.String(50), nullable=True)
-    duration = db.Column(db.Integer, nullable=True)
-    views = db.Column(db.Integer, nullable=False, default=0)
-    likes = db.Column(db.Integer, nullable=False, default=0)
-    # users.id 참조. 유저 삭제 시 해당 영상도 CASCADE 삭제
+
+    # ----- 메타데이터 -----
+    title = db.Column(db.String(200), nullable=False)       # 제목 (필수)
+    description = db.Column(db.Text, nullable=True)        # 설명 (선택)
+    category = db.Column(db.String(50), nullable=True)     # 카테고리 (미사용 가능)
+    duration = db.Column(db.Integer, nullable=True)        # 재생 시간(초)
+
+    # ----- 파일 경로 (파일명만 저장, 실제 파일은 config["VIDEO_FOLDER"] 등에 저장) -----
+    video_path = db.Column(db.String(500), nullable=False)       # 비디오 파일명 (예: uuid.mp4)
+    thumbnail_path = db.Column(db.String(500), nullable=True)    # 썸네일 파일명 (예: uuid.jpg)
+    video_public_id = db.Column(db.String(255), nullable=True)   # 클라우드 저장 시 비디오 public_id
+    thumbnail_public_id = db.Column(db.String(255), nullable=True)  # 클라우드 저장 시 썸네일 public_id
+
+    # ----- 통계 -----
+    views = db.Column(db.Integer, nullable=False, default=0)   # 조회수
+    likes = db.Column(db.Integer, nullable=False, default=0) # 좋아요 수
+
+    # ----- 작성자 (users.id 참조. 유저 삭제 시 해당 영상도 CASCADE 삭제) -----
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    video_public_id = db.Column(db.String(255), nullable=True)
-    thumbnail_public_id = db.Column(db.String(255), nullable=True)
+
+    # ----- 타임스탬프 -----
+    created_at = db.Column(db.DateTime, default=_utc_now)                    # 업로드 시각
+    updated_at = db.Column(db.DateTime, default=_utc_now, onupdate=_utc_now)  # 수정 시 자동 갱신
+
+    # ----- N:M 관계: Tag -----
+    tags = db.relationship(
+        "Tag",
+        secondary=video_tags,
+        backref=db.backref("videos", lazy="dynamic"),
+        lazy="select",  # save_tags에서 목록 할당을 위해 select 사용
+    )
+
+    def save_tags(self, tag_string, commit=True):
+        """
+        콤마로 구분된 태그 문자열을 파싱해 Tag 객체로 변환 후 비디오에 연결.
+        예: "태그1, 태그2, 태그3" -> [Tag(태그1), Tag(태그2), Tag(태그3)]
+        기존 태그 연결은 새 태그 목록으로 교체됨.
+        """
+        from app.models.tag import Tag
+
+        if not tag_string or not isinstance(tag_string, str):
+            tag_names = []
+        else:
+            tag_names = [name.strip() for name in tag_string.split(",") if name.strip()]
+
+        tag_objects = []
+        for name in tag_names:
+            if len(name) > 50:
+                continue
+            tag = Tag.query.filter_by(name=name).first()
+            if tag is None:
+                tag = Tag(name=name)
+                db.session.add(tag)
+            tag_objects.append(tag)
+
+        self.tags = tag_objects
+        if commit:
+            db.session.commit()

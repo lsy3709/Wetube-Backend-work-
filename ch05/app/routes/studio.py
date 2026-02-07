@@ -51,7 +51,15 @@ def _save_upload_file(file_storage, save_dir, allowed_extensions, max_size):
 @studio_bp.route("/")
 @studio_bp.route("")  # /studio (끝 슬래시 없음)도 처리
 def index():
-    return render_template("studio/index.html")
+    user_id = current_app.config.get("DEFAULT_USER_ID", 1)
+    videos = Video.query.filter_by(user_id=user_id).order_by(Video.created_at.desc()).all()
+    total_views = sum(v.views for v in videos)
+    return render_template(
+        "studio/index.html",
+        videos=videos,
+        video_count=len(videos),
+        total_views=total_views,
+    )
 
 
 @studio_bp.route("/upload", methods=["GET", "POST"])
@@ -62,17 +70,20 @@ def upload():
     # POST: 폼 데이터 수신
     title = (request.form.get("title") or "").strip()
     description = (request.form.get("description") or "").strip()
+    category_input = (request.form.get("category") or "").strip() or None
     video_file = request.files.get("video")
     thumbnail_file = request.files.get("thumbnail")
+
+    tags_input = (request.form.get("tags") or "").strip()
 
     # 제목 필수
     if not title:
         flash("제목을 입력해주세요.", "error")
-        return render_template("studio/upload.html", title=title, description=description), 400
+        return render_template("studio/upload.html", title=title, description=description, category=category_input, tags=tags_input), 400
 
     if len(title) > 200:
         flash("제목은 200자 이하여야 합니다.", "error")
-        return render_template("studio/upload.html", title=title, description=description), 400
+        return render_template("studio/upload.html", title=title, description=description, category=category_input, tags=tags_input), 400
 
     # 비디오 파일 검증 후 저장
     video_folder = current_app.config["VIDEO_FOLDER"]
@@ -83,7 +94,7 @@ def upload():
     )
     if video_error:
         flash(video_error, "error")
-        return render_template("studio/upload.html", title=title, description=description), 400
+        return render_template("studio/upload.html", title=title, description=description, category=category_input, tags=tags_input), 400
 
     # 썸네일(선택) 검증 후 저장
     thumbnail_filename = None
@@ -101,7 +112,7 @@ def upload():
             except OSError:
                 pass
             flash(thumb_error, "error")
-            return render_template("studio/upload.html", title=title, description=description), 400
+            return render_template("studio/upload.html", title=title, description=description, category=category_input, tags=tags_input), 400
 
     # DB에 Video 저장
     user_id = current_app.config.get("DEFAULT_USER_ID", 1)
@@ -109,12 +120,15 @@ def upload():
         video = Video(
             title=title,
             description=description or None,
+            category=category_input,
             video_path=video_filename,
             thumbnail_path=thumbnail_filename,
             user_id=user_id,
         )
         db.session.add(video)
         db.session.commit()
+        if tags_input:
+            video.save_tags(tags_input, commit=True)
     except Exception as e:
         db.session.rollback()
         # 저장된 파일 정리
@@ -128,12 +142,30 @@ def upload():
             except OSError:
                 pass
         flash(f"DB 저장 중 오류가 발생했습니다: {e}", "error")
-        return render_template("studio/upload.html", title=title, description=description), 500
+        return render_template("studio/upload.html", title=title, description=description, category=category_input, tags=tags_input), 500
 
     flash("동영상이 업로드되었습니다.", "success")
     return redirect(url_for("studio.index"))
 
 
-@studio_bp.route("/edit/<int:video_id>")
+@studio_bp.route("/edit/<int:video_id>", methods=["GET", "POST"])
 def edit(video_id):
-    return render_template("studio/edit.html", video_id=video_id)
+    video = Video.query.get_or_404(video_id)
+    if request.method == "POST":
+        title = (request.form.get("title") or "").strip()
+        description = (request.form.get("description") or "").strip()
+        if not title:
+            flash("제목을 입력해주세요.", "error")
+            return render_template("studio/edit.html", video=video), 400
+        if len(title) > 200:
+            flash("제목은 200자 이하여야 합니다.", "error")
+            return render_template("studio/edit.html", video=video), 400
+        video.title = title
+        video.description = description or None
+        video.category = (request.form.get("category") or "").strip() or None
+        tags_str = (request.form.get("tags") or "").strip()
+        video.save_tags(tags_str, commit=False)
+        db.session.commit()
+        flash("동영상 정보가 수정되었습니다.", "success")
+        return redirect(url_for("studio.index"))
+    return render_template("studio/edit.html", video=video)
