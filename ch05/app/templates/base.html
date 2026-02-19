@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
   <title>{% block title %}WeTube{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
 </head>
-<body>
+<body class="{% if current_user.is_authenticated %}is-logged-in{% endif %}{% if current_user.is_authenticated and current_user.is_admin %} is-admin{% endif %}">
   <header class="header {% block header_class %}header--with-sidebar{% endblock %}" id="main-header">
     <a href="{{ url_for('main.index') }}" class="logo">WeTube</a>
     <form class="search-wrap" method="get" action="{{ url_for('main.search') }}">
@@ -23,11 +24,17 @@
       </div>
       <div data-logged-in-only>
         <a href="{{ url_for('studio.index') }}" class="btn btn--icon" title="Studio">🎬</a>
-        <a href="{{ url_for('admin.index') }}" class="btn btn--icon" data-admin-only title="관리자" style="display: none;">🛡️</a>
+        <a href="{{ url_for('admin.index') }}" class="btn btn--icon" data-admin-only title="관리자" style="{% if not (current_user.is_authenticated and current_user.is_admin) %}display: none;{% endif %}">🛡️</a>
         <button type="button" class="btn btn--icon" title="알림">🔔</button>
-        <div class="dropdown-wrap">
-          <button type="button" class="avatar" id="btn-logout" title="로그아웃"><span id="header-username">aaa</span></button>
-        </div>
+        <span class="header-email" title="{{ current_user.email }}">{{ current_user.email }}</span>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn--outline btn--small header-logout-btn" title="로그아웃">로그아웃</a>
+        <a href="{{ url_for('auth.profile') }}" class="avatar" id="btn-avatar" title="마이페이지">
+          {% if current_user.is_authenticated and current_user.profile_image %}
+          <img src="{{ url_for('main.media_profile', filename=current_user.profile_image) }}" alt="" class="avatar-img">
+          {% else %}
+          <span id="header-username">{{ (current_user.username or '')[0:1]|upper }}</span>
+          {% endif %}
+        </a>
       </div>
     </div>
   </header>
@@ -41,7 +48,7 @@
         <li><a href="#"><span class="icon">📚</span> 보관함</a></li>
         <li><a href="#"><span class="icon">🕐</span> 시청 기록</a></li>
         <li class="sidebar-divider"></li>
-        {% set _cat = request.args.get('category', 'all') %}
+        {% set _cat = request.args.get('category') or 'all' %}
         <li><a href="{{ url_for('main.index', category='all') }}" class="sidebar-category {% if _cat == 'all' %}active{% endif %}">전체</a></li>
         <li><a href="{{ url_for('main.index', category='entertainment') }}" class="sidebar-category {% if _cat == 'entertainment' %}active{% endif %}">엔터테인먼트</a></li>
         <li><a href="{{ url_for('main.index', category='music') }}" class="sidebar-category {% if _cat == 'music' %}active{% endif %}">음악</a></li>
@@ -57,15 +64,24 @@
         <li><a href="{{ url_for('main.index', category='etc') }}" class="sidebar-category {% if _cat == 'etc' %}active{% endif %}">기타</a></li>
         <li class="sidebar-divider"></li>
         <li><a href="{{ url_for('studio.index') }}"><span class="icon">🎬</span> Studio</a></li>
-        <li><a href="#"><span class="icon">▶</span> 내 동영상</a></li>
+        <li><a href="{{ url_for('main.user_profile', username=current_user.username if current_user.is_authenticated else 'default') }}"><span class="icon">▶</span> 내 동영상</a></li>
         <li><a href="#"><span class="icon">⏱</span> 나중에 볼 동영상</a></li>
-        <li><a href="{{ url_for('auth.profile') }}"><span class="icon">⚙️</span> 회원정보 수정</a></li>
+        <li><a href="{{ url_for('auth.profile') }}"><span class="icon">👤</span> 마이페이지</a></li>
       </ul>
     </nav>
   </aside>
 
   <main class="main-wrap main-wrap--with-sidebar">
     <div class="main-content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-wrap" role="region" aria-label="알림">
+            {% for category, msg in messages %}
+              <div class="auth-msg auth-msg--{{ category or 'success' }} is-visible" role="alert">{{ msg }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
       {% block content %}{% endblock %}
     </div>
   </main>

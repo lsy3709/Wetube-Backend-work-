@@ -6,9 +6,12 @@ Flask 앱 팩토리 – 업로드·DB 포함.
 """
 
 import os
+from datetime import datetime, timezone
 
-from flask import Flask
+from flask import Flask, render_template
+from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
 
 # ---------------------------------------------------------------------------
 # DB 확장 객체 (모듈 레벨)
@@ -16,6 +19,7 @@ from flask_sqlalchemy import SQLAlchemy
 #       라우트·모델에서 from app import db 로 사용합니다.
 # ---------------------------------------------------------------------------
 db = SQLAlchemy()
+login_manager = LoginManager()
 
 
 def create_app():
@@ -32,29 +36,34 @@ def create_app():
     project_root = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
     video_folder = os.path.join(project_root, "uploads", "videos")
     thumbnail_folder = os.path.join(project_root, "uploads", "thumbnails")
+    profile_folder = os.path.join(project_root, "uploads", "profiles")
 
     # ----- 3) 설정(config) 등록 -----
     # 기능: DB URI, 업로드 폴더·용량·확장자, 기본 user_id 등을 앱 설정에 넣습니다.
     #       라우트에서 current_app.config["VIDEO_FOLDER"] 등으로 읽습니다.
+    default_db_path = os.path.join(project_root, "instance", "wetube.db")
+    # Windows에서 백슬래시가 URI로 잘못 해석되지 않도록 슬래시로 통일
+    default_db_uri = "sqlite:///" + os.path.normpath(default_db_path).replace("\\", "/")
     app.config.from_mapping(
         # 세션·flash·CSRF 등 서명용. 개발/프론트 전용이라 고정값 사용. 운영에서는 환경변수 등으로 강한 랜덤 키 사용 필수.
         SECRET_KEY="dev-frontend-only",
         # DB: 환경변수 DATABASE_URL 없으면 SQLite (instance/wetube.db)
-        SQLALCHEMY_DATABASE_URI=os.environ.get(
-            "DATABASE_URL",
-            f"sqlite:///{os.path.join(project_root, 'instance', 'wetube.db')}",
-        ),
+        SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL", default_db_uri),
         # 모델 속성 변경 추적 비활성화. True면 변경 시 before_commit 등 이벤트 발생·오버헤드 있음. 불필요하면 False 권장.
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         # 업로드 폴더 (절대 경로)
         VIDEO_FOLDER=video_folder,
         THUMBNAIL_FOLDER=thumbnail_folder,
+        PROFILE_IMAGE_FOLDER=profile_folder,
         # 업로드 제한 (바이트)
         MAX_VIDEO_SIZE=2 * 1024 * 1024 * 1024,  # 2GB
         MAX_THUMBNAIL_SIZE=5 * 1024 * 1024,  # 5MB
+        MAX_PROFILE_IMAGE_SIZE=5 * 1024 * 1024,  # 5MB
         # 허용 확장자 (set, 소문자로 비교)
         ALLOWED_VIDEO_EXTENSIONS={"mp4", "webm", "mov"},
         ALLOWED_THUMBNAIL_EXTENSIONS={"jpg", "jpeg", "png", "gif", "webp"},
+        ALLOWED_PROFILE_IMAGE_EXTENSIONS={"jpg", "jpeg", "png", "gif", "webp"},
+        ALLOWED_IMAGE_EXTENSIONS={"jpg", "jpeg", "png", "gif", "webp"},  # validate_image_file 호환
         # 로그인 미연동 시 업로드에 사용할 user_id (기본 1)
         DEFAULT_USER_ID=1,
     )
@@ -63,12 +72,36 @@ def create_app():
     # 기능: 폴더가 없으면 생성. exist_ok=True 로 이미 있어도 에러 없음.
     os.makedirs(app.config["VIDEO_FOLDER"], exist_ok=True)
     os.makedirs(app.config["THUMBNAIL_FOLDER"], exist_ok=True)
+    os.makedirs(app.config["PROFILE_IMAGE_FOLDER"], exist_ok=True)
     instance_path = os.path.join(project_root, "instance")
     os.makedirs(instance_path, exist_ok=True)
+
+    # 개발 시 실제 사용 중인 DB 경로 확인용 (wetube.db 미반영 시 점검)
+    _uri = app.config["SQLALCHEMY_DATABASE_URI"]
+    if _uri.startswith("sqlite:///"):
+        _path = _uri.replace("sqlite:///", "").replace("/", os.sep)
+        print(f"[DB] 사용 중: {os.path.abspath(_path)}")
 
     # ----- 5) DB 확장을 현재 앱에 연결 -----
     # 기능: db.Model, db.session, db.create_all() 등을 이 앱 컨텍스트에서 사용 가능하게 함.
     db.init_app(app)
+
+    # ----- 5-0) CSRF 보호 (댓글 등 수동 폼용) -----
+    CSRFProtect(app)
+
+    # ----- 5-1) Flask-Login 초기화 -----
+    login_manager.init_app(app)
+    login_manager.login_view = "auth.login"
+    login_manager.login_message = "로그인이 필요합니다."
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        """세션에서 사용자 ID로 유저 객체 반환."""
+        from app.models import User
+        try:
+            return db.session.get(User, int(user_id)) if user_id else None
+        except (ValueError, TypeError):
+            return None
 
     # ----- 6) Blueprint 등록 -----
     # 기능: URL 접두사별로 라우트를 묶어 등록. / → main, /auth → auth, /studio → studio, /admin → admin.
@@ -76,11 +109,40 @@ def create_app():
     from app.routes.auth import auth_bp
     from app.routes.studio import studio_bp
     from app.routes.admin import admin_bp
+    from app.routes.api import api_bp
+    from app.routes.comments import comments_bp
 
     app.register_blueprint(main_bp)
+    app.register_blueprint(comments_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(studio_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(api_bp)
+
+    # 템플릿 필터: 상대 시간 표시 (예: "방금 전", "3일 전")
+    @app.template_filter("timesince")
+    def timesince_filter(dt):
+        if not dt:
+            return ""
+        try:
+            now = datetime.now(timezone.utc)
+            if getattr(dt, "tzinfo", None) is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            delta = now - dt
+            if delta.days > 0:
+                return f"{delta.days}일 전"
+            if delta.seconds >= 3600:
+                return f"{delta.seconds // 3600}시간 전"
+            if delta.seconds >= 60:
+                return f"{delta.seconds // 60}분 전"
+            return "방금 전"
+        except (TypeError, ValueError, OverflowError):
+            return dt.strftime("%Y. %m. %d.") if hasattr(dt, "strftime") else str(dt)
+
+    # 403: 로그인 미구현 시 수정/삭제는 소유자(DEFAULT_USER_ID)만 허용
+    @app.errorhandler(403)
+    def forbidden(e):
+        return render_template("errors/403.html"), 403
 
     # ----- 7) 모델 로드 후 테이블·기본 유저 생성 -----
     # 기능: User, Video 모델을 로드한 뒤 create_all()로 테이블 생성.
@@ -94,13 +156,11 @@ def create_app():
         db.create_all()
         # user_id=1 이 없으면 업로드 시 DEFAULT_USER_ID(1)를 쓸 수 없으므로 기본 유저 생성
         if db.session.get(User, 1) is None:
-            # 기본 유저 인스턴스 (실제 로그인·비밀번호 검증 없음)
             default_user = User(
                 username="default",
                 email="default@example.com",
-                password_hash="",
             )
-            # 세션에 추가 후 DB에 반영
+            default_user.set_password("default")
             db.session.add(default_user)
             db.session.commit()
 
@@ -122,7 +182,12 @@ app = create_app()
 #   - python app/__init__.py: 이 파일을 스크립트로 실행 → __init__.py 전체 실행 → 아래 app.run() 실행.
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
+    db_uri = app.config["SQLALCHEMY_DATABASE_URI"]
+    # sqlite:///C:/path/to/wetube.db → 실제 파일 경로만 표시
+    if db_uri.startswith("sqlite:///"):
+        db_path = db_uri.replace("sqlite:///", "").replace("/", os.sep)
+        print(f"[DB] 사용 중: {db_path}")
     print("등록된 라우트: / /auth/login /auth/register /auth/profile /studio ...")
     print("중요: 5000 포트를 쓰는 다른 프로그램(기존 Flask 등)이 있으면 먼저 종료하세요.")
     print("      그렇지 않으면 /studio/ 에서 404가 납니다.")
-    app.run(debug=True, host="127.0.0.1", port=5000, use_reloader=False)
+    app.run(debug=True, host="127.0.0.1", port=5000)  # use_reloader 기본 True → 코드 변경 시 자동 재시작
