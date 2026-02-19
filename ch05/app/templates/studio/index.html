@@ -12,40 +12,6 @@
           <span>📤</span> 동영상 업로드
         </a>
       </div>
-      <div class="studio-stats">
-        <div class="stat-card">
-          <div class="stat-value">{{ video_count|default(0) }}</div>
-          <div class="stat-label">동영상</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">{{ total_views|default(0) }}</div>
-          <div class="stat-label">조회수</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">0</div>
-          <div class="stat-label">구독자</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="studio-toolbar">
-      <div class="studio-search">
-        <input type="search" class="studio-search-input" placeholder="동영상 검색..." aria-label="동영상 검색">
-        <button type="button" class="studio-search-btn" aria-label="검색">🔍</button>
-      </div>
-      <div class="studio-filters">
-        <select class="studio-filter-select">
-          <option value="all">전체</option>
-          <option value="public">공개</option>
-          <option value="unlisted">일부 공개</option>
-          <option value="private">비공개</option>
-        </select>
-        <select class="studio-filter-select">
-          <option value="recent">최신순</option>
-          <option value="popular">인기순</option>
-          <option value="title">제목순</option>
-        </select>
-      </div>
     </div>
 
     <div class="studio-content">
@@ -57,61 +23,111 @@
         <a href="{{ url_for('studio.upload') }}" class="btn btn--primary" id="btn-upload-empty">동영상 업로드</a>
       </div>
       {% else %}
-      <div class="studio-video-list" id="studio-video-list">
-        <table class="video-table">
-          <thead>
-            <tr>
-              <th class="col-thumbnail">동영상</th>
-              <th class="col-title">제목</th>
-              <th class="col-visibility">공개 상태</th>
-              <th class="col-restrictions">제한</th>
-              <th class="col-date">날짜</th>
-              <th class="col-views">조회수</th>
-              <th class="col-comments">댓글</th>
-              <th class="col-likes">좋아요</th>
-              <th class="col-actions">작업</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for video in videos %}
-            <tr class="video-row">
-              <td class="col-thumbnail">
-                <div class="video-thumbnail-small">
+      <div class="studio-dashboard">
+        <!-- 통계 -->
+        <section class="studio-section">
+          <h2 class="studio-section-title">통계</h2>
+          <div class="studio-stats-grid">
+            <div class="studio-stat-item">
+              <div class="studio-stat-value">{{ stats.video_count|default(0) }}</div>
+              <div class="studio-stat-label">총 동영상</div>
+            </div>
+            <div class="studio-stat-item">
+              <div class="studio-stat-value">{{ stats.total_views|default(0) }}</div>
+              <div class="studio-stat-label">총 조회수</div>
+            </div>
+            <div class="studio-stat-item">
+              <div class="studio-stat-value">{{ stats.total_likes|default(0) }}</div>
+              <div class="studio-stat-label">총 좋아요</div>
+            </div>
+            <div class="studio-stat-item">
+              <div class="studio-stat-value">{{ stats.total_comments|default(0) }}</div>
+              <div class="studio-stat-label">총 댓글</div>
+            </div>
+            <div class="studio-stat-item">
+              <div class="studio-stat-value">{{ stats.avg_views|default(0) }}</div>
+              <div class="studio-stat-label">평균 조회수</div>
+            </div>
+            <div class="studio-stat-item">
+              <div class="studio-stat-value">{{ stats.avg_likes|default(0) }}</div>
+              <div class="studio-stat-label">평균 좋아요</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 최근 활동 -->
+        <section class="studio-section">
+          <h2 class="studio-section-title">최근 활동</h2>
+          <div class="studio-recent-grid">
+            <div class="studio-recent-item">
+              <h3 class="studio-recent-period">최근 7일</h3>
+              <p>동영상: {{ recent_7d.video_count }}개</p>
+              <p>조회수: {{ recent_7d.views }}회</p>
+              <p>좋아요: {{ recent_7d.likes }}개</p>
+            </div>
+            <div class="studio-recent-item">
+              <h3 class="studio-recent-period">최근 30일</h3>
+              <p>동영상: {{ recent_30d.video_count }}개</p>
+              <p>조회수: {{ recent_30d.views }}회</p>
+              <p>좋아요: {{ recent_30d.likes }}개</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 인기 동영상 TOP 5 -->
+        {% if top_videos %}
+        <section class="studio-section">
+          <h2 class="studio-section-title">인기 동영상 TOP 5</h2>
+          <ul class="studio-top-list">
+            {% for video in top_videos %}
+            <li class="studio-top-item">
+              <a href="{{ url_for('main.watch', video_id=video.id) }}" class="studio-top-link">
+                <div class="studio-top-thumb">
                   {% if video.thumbnail_path %}
-                  <img src="{{ url_for('main.media_thumbnail', filename=video.thumbnail_path) }}" alt="" class="video-thumb-img">
+                  <img src="{{ url_for('main.media_thumbnail', filename=video.thumbnail_path) }}" alt="">
                   {% else %}
                   <span>📹</span>
                   {% endif %}
                 </div>
-              </td>
-              <td class="col-title">
-                <div class="video-title-cell">
-                  <a href="{{ url_for('main.watch', video_id=video.id) }}" class="video-title-text">{{ video.title }}</a>
-                  <div class="video-title-meta">동영상 ID: {{ video.id }}</div>
+                <div class="studio-top-info">
+                  <div class="studio-top-title">{{ video.title }}</div>
+                  <div class="studio-top-meta">조회수 {{ video.views }}회 · 좋아요 {{ video.likes }}개</div>
                 </div>
-              </td>
-              <td class="col-visibility">
-                <span class="badge badge--public">공개</span>
-              </td>
-              <td class="col-restrictions">
-                <span class="badge badge--none">없음</span>
-              </td>
-              <td class="col-date">
-                <div class="video-date">{{ video.created_at.strftime('%Y-%m-%d') if video.created_at else '-' }}</div>
-              </td>
-              <td class="col-views">{{ video.views }}</td>
-              <td class="col-comments">0</td>
-              <td class="col-likes">{{ video.likes }}</td>
-              <td class="col-actions">
-                <div class="action-menu">
-                  <a href="{{ url_for('studio.edit', video_id=video.id) }}" class="action-btn" title="편집">✏️</a>
-                  <button type="button" class="action-btn" title="삭제">🗑️</button>
-                </div>
-              </td>
-            </tr>
+              </a>
+            </li>
             {% endfor %}
-          </tbody>
-        </table>
+          </ul>
+        </section>
+        {% endif %}
+
+        <!-- 내 동영상 목록 -->
+        <section class="studio-section">
+          <h2 class="studio-section-title">내 동영상 목록</h2>
+          <ul class="studio-video-list" id="studio-video-list">
+            {% for video in videos %}
+            <li class="studio-video-item">
+              <div class="studio-video-thumb">
+                {% if video.thumbnail_path %}
+                <img src="{{ url_for('main.media_thumbnail', filename=video.thumbnail_path) }}" alt="">
+                {% else %}
+                <span>📹</span>
+                {% endif %}
+              </div>
+              <div class="studio-video-info">
+                <a href="{{ url_for('main.watch', video_id=video.id) }}" class="studio-video-title">{{ video.title }}</a>
+                <div class="studio-video-meta">조회수 {{ video.views }}회 · {{ video.created_at.strftime('%Y.%m.%d') if video.created_at else '-' }}</div>
+              </div>
+              <div class="studio-video-actions">
+                <a href="{{ url_for('main.watch', video_id=video.id) }}" class="btn btn--outline btn--small">보기</a>
+                <a href="{{ url_for('studio.edit', video_id=video.id) }}" class="btn btn--outline btn--small">수정</a>
+                <form method="post" action="{{ url_for('studio.delete', video_id=video.id) }}" class="studio-delete-inline" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                  <button type="submit" class="btn btn--danger btn--small">삭제</button>
+                </form>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+        </section>
       </div>
       {% endif %}
     </div>

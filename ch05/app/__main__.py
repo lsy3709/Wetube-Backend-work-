@@ -22,5 +22,5 @@ if __name__ == "__main__":
     print("      그렇지 않으면 /studio/ 에서 404가 납니다.")
 
     # 기능: Flask 개발 서버 기동.
-    #       debug=True: 에러 시 디버그 페이지, use_reloader=False: 리로더 비활성화(선택).
-    app.run(debug=True, host="127.0.0.1", port=5000, use_reloader=False)
+    #       debug=True: 에러 시 디버그 페이지, use_reloader 기본 True → 코드 변경 시 자동 재시작
+    app.run(debug=True, host="127.0.0.1", port=5000)

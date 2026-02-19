@@ -3,7 +3,7 @@
 {% block title %}데이터베이스 관리 - 관리자 - WeTube{% endblock %}
 
 {% block content %}
-  <div class="admin-page admin-database-page" data-admin-logged-in-only>
+  <div class="admin-page admin-database-page">
     <div class="admin-header">
       <div class="admin-header-left">
         <a href="{{ url_for('admin.index') }}" class="admin-back-link">← 관리자 대시보드</a>
@@ -11,7 +11,7 @@
       </div>
       <div class="admin-header-actions">
         <button type="button" class="btn btn--outline" id="btn-backup">백업</button>
-        <button type="button" class="btn btn--outline" id="admin-logout-btn">로그아웃</button>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn--outline">로그아웃</a>
       </div>
     </div>
 
@@ -21,8 +21,8 @@
         <aside class="db-sidebar">
           <h3 class="db-sidebar-title">테이블 목록</h3>
           <ul class="db-table-list">
-            <li><a href="{{ url_for('admin.table_view', table_name='user') }}" class="db-table-link">user</a></li>
-            <li><a href="{{ url_for('admin.table_view', table_name='video') }}" class="db-table-link">video</a></li>
+            <li><a href="{{ url_for('admin.table_view', table_name='user') }}" class="db-table-link">users</a></li>
+            <li><a href="{{ url_for('admin.table_view', table_name='video') }}" class="db-table-link">videos</a></li>
             <li><a href="{{ url_for('admin.table_view', table_name='comment') }}" class="db-table-link">comment</a></li>
             <li><a href="{{ url_for('admin.table_view', table_name='channel') }}" class="db-table-link">channel</a></li>
             <li><a href="{{ url_for('admin.table_view', table_name='subscription') }}" class="db-table-link">subscription</a></li>
@@ -61,16 +61,16 @@
             <p class="admin-msg-text">Query 문을 실행하려면 전용 페이지로 이동하세요.</p>
             <a href="{{ url_for('admin.query') }}" class="btn btn--primary">Query 실행 페이지</a>
           </div>
+
+          <!-- API·DB 검증 -->
+          <div class="db-section">
+            <h3 class="db-section-title">API·DB 검증</h3>
+            <p class="admin-msg-text">REST API 연동 및 테스트 전/후 DB 비교.</p>
+            <a href="{{ url_for('admin.api_preview') }}" class="btn btn--outline">API 미리보기</a>
+            <a href="{{ url_for('admin.db_verify') }}" class="btn btn--outline">DB 검증 리포트</a>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="admin-logged-out" data-admin-logged-out-only>
-    <div class="hero">
-      <h1>관리자 권한이 필요합니다</h1>
-      <p>이 페이지에 접근하려면 관리자 계정으로 로그인해야 합니다.</p>
-      <a href="{{ url_for('auth.login') }}" class="btn btn--primary">로그인</a>
     </div>
   </div>
 {% endblock %}

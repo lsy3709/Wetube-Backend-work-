@@ -45,13 +45,6 @@ def _seed_videos_from_uploads(app, user_id):
     return Video.query.first()
 
 
-@pytest.fixture
-def real_app_ctx(real_app):
-    """실제 DB 앱 컨텍스트."""
-    with real_app.app_context():
-        yield real_app
-
-
 def test_seed_videos_tags_video_tags(real_app_ctx):
     """
     videos, tags, video_tags 테이블 시드.

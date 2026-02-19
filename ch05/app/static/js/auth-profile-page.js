@@ -1,21 +1,12 @@
 /**
- * 회원정보 수정 페이지 – 프론트 전용. DB·백엔드 없음.
+ * 회원정보 수정 페이지 – Flask 백엔드 연결.
+ * @login_required로 미로그인 시 서버에서 /auth/login으로 리다이렉트.
+ * 폼은 POST /auth/profile 으로 제출.
  */
 
 (function () {
-  const STORAGE_KEY = 'wetube_logged_in';
-
-  // 로그인 상태 확인
-  if (sessionStorage.getItem(STORAGE_KEY) !== '1') {
-    alert('로그인이 필요합니다.');
-    window.location.href = '/auth/login';
-    return;
-  }
-
   const form = document.getElementById('profile-form');
   const msgEl = document.getElementById('profile-msg');
-  const password = document.getElementById('profile-password');
-  const passwordConfirm = document.getElementById('profile-password-confirm');
   const imageInput = document.getElementById('profile-image-input');
   const imagePreview = document.getElementById('profile-image-preview');
   const imagePlaceholder = document.getElementById('profile-image-placeholder');
@@ -64,26 +55,19 @@
   }
 
   form.addEventListener('submit', function (e) {
-    e.preventDefault();
     if (!msgEl) return;
 
-    // 비밀번호 변경 시 확인
-    const pass = (password && password.value) || '';
-    const passConfirm = (passwordConfirm && passwordConfirm.value) || '';
+    // 새 비밀번호 변경 시 클라이언트 검증
+    const newPass = (form.querySelector('[name="new_password"]') || {}).value || '';
+    const newPassConfirm = (form.querySelector('[name="new_password_confirm"]') || {}).value || '';
 
-    if (pass && pass !== passConfirm) {
-      msgEl.textContent = '비밀번호가 일치하지 않습니다.';
+    if (newPass && newPass !== newPassConfirm) {
+      e.preventDefault();
+      msgEl.textContent = '새 비밀번호와 확인이 일치하지 않습니다.';
       msgEl.className = 'auth-msg auth-msg--error is-visible';
       return;
     }
 
-    // 프론트엔드 전용 메시지
-    const hasImage = imageInput && imageInput.files && imageInput.files.length > 0;
-    let msg = '프론트엔드 전용입니다. 실제 회원정보 수정 기능은 추후 구현됩니다.';
-    if (hasImage) {
-      msg += '\n선택한 프로필 사진: ' + imageInput.files[0].name;
-    }
-    msgEl.textContent = msg;
-    msgEl.className = 'auth-msg auth-msg--success is-visible';
+    // 검증 통과 시 폼이 서버로 제출됨 (프로필 이미지는 추후 백엔드 구현)
   });
 })();

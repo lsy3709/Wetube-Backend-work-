@@ -3,24 +3,24 @@
 {% block title %}동영상 관리 - 관리자 - WeTube{% endblock %}
 
 {% block content %}
-  <div class="admin-page admin-videos-page" data-admin-logged-in-only>
+  <div class="admin-page admin-videos-page">
     <div class="admin-header">
       <div class="admin-header-left">
         <a href="{{ url_for('admin.index') }}" class="admin-back-link">← 관리자 대시보드</a>
         <h1 class="admin-title">동영상 관리</h1>
       </div>
       <div class="admin-header-actions">
-        <button type="button" class="btn btn--outline" id="admin-logout-btn">로그아웃</button>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn--outline">로그아웃</a>
       </div>
     </div>
 
     <div class="admin-content">
       <!-- 검색 / 필터 -->
       <div class="admin-toolbar">
-        <div class="admin-search">
-          <input type="search" id="video-search" class="admin-search-input" placeholder="제목, 업로더 검색">
-          <button type="button" class="btn btn--primary" id="btn-search">검색</button>
-        </div>
+        <form method="get" action="{{ url_for('admin.videos') }}" class="admin-search">
+          <input type="search" name="q" id="video-search" class="admin-search-input" placeholder="제목, 업로더 검색" value="{{ request.args.get('q', '') }}">
+          <button type="submit" class="btn btn--primary" id="btn-search">검색</button>
+        </form>
         <div class="admin-filters">
           <select id="video-visibility-filter" class="admin-select">
             <option value="all">전체 공개설정</option>
@@ -36,7 +36,7 @@
         </div>
       </div>
 
-      <!-- 동영상 목록 테이블 -->
+      <!-- 동영상 목록 테이블 (DB 실데이터) -->
       <div class="admin-table-wrap">
         <table class="admin-table admin-table--videos">
           <thead>
@@ -53,18 +53,24 @@
             </tr>
           </thead>
           <tbody>
-            {% for i in range(8) %}
+            {% for video in videos.items %}
             <tr>
-              <td class="col-num">{{ i + 1 }}</td>
+              <td class="col-num">{{ (videos.page - 1) * videos.per_page + loop.index }}</td>
               <td class="col-thumb">
+                {% if video.thumbnail_path %}
+                <a href="{{ url_for('main.watch', video_id=video.id) }}" class="video-thumb-link">
+                  <img src="{{ url_for('main.media_thumbnail', filename=video.thumbnail_path) }}" alt="" class="video-thumb-small-img">
+                </a>
+                {% else %}
                 <div class="video-thumb-small">📹</div>
+                {% endif %}
               </td>
               <td class="col-title">
-                <a href="{{ url_for('main.watch', video_id=i+1) }}" class="video-title-link">샘플 동영상 {{ i + 1 }}</a>
+                <a href="{{ url_for('main.watch', video_id=video.id) }}" class="video-title-link">{{ video.title }}</a>
               </td>
-              <td class="col-uploader">{{ ['lsye', 'aaa', '관리자', '마로아빠', '서준태양파파', 'user1', 'test', 'guest'][i] }}</td>
-              <td class="col-views">{{ (i + 1) * 100 }}회</td>
-              <td class="col-date">2025.{{ '%02d'|format(12 - i) }}.{{ '%02d'|format(15 + i) }}</td>
+              <td class="col-uploader">{{ video.user.username if video.user else '-' }}</td>
+              <td class="col-views">{{ video.views }}회</td>
+              <td class="col-date">{{ video.created_at.strftime('%Y-%m-%d') if video.created_at else '-' }}</td>
               <td class="col-visibility">
                 <span class="status-badge status-public">공개</span>
               </td>
@@ -72,9 +78,15 @@
                 <span class="status-badge status-active">정상</span>
               </td>
               <td class="col-actions">
-                <a href="{{ url_for('studio.edit', video_id=i+1) }}" class="btn-icon" title="수정">✏️</a>
-                <button type="button" class="btn-icon btn-icon--danger" title="삭제">🗑️</button>
+                <a href="{{ url_for('studio.edit', video_id=video.id) }}" class="btn-icon" title="수정">✏️</a>
+                <form method="post" action="{{ url_for('studio.delete', video_id=video.id) }}" style="display: inline;" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                  <button type="submit" class="btn-icon btn-icon--danger" title="삭제">🗑️</button>
+                </form>
               </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="9" class="admin-empty">등록된 동영상이 없습니다.</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -82,19 +94,21 @@
       </div>
 
       <!-- 페이지네이션 -->
+      {% if videos.pages > 1 %}
       <div class="admin-pagination">
-        <button type="button" class="btn btn--outline btn--small" disabled>이전</button>
-        <span class="pagination-info">1 / 3 페이지</span>
-        <button type="button" class="btn btn--outline btn--small">다음</button>
+        {% if videos.has_prev %}
+        <a href="{{ url_for('admin.videos', page=videos.prev_num, q=request.args.get('q', '')) }}" class="btn btn--outline btn--small">이전</a>
+        {% else %}
+        <span class="btn btn--outline btn--small" disabled>이전</span>
+        {% endif %}
+        <span class="pagination-info">{{ videos.page }} / {{ videos.pages }} 페이지</span>
+        {% if videos.has_next %}
+        <a href="{{ url_for('admin.videos', page=videos.next_num, q=request.args.get('q', '')) }}" class="btn btn--outline btn--small">다음</a>
+        {% else %}
+        <span class="btn btn--outline btn--small" disabled>다음</span>
+        {% endif %}
       </div>
-    </div>
-  </div>
-
-  <div class="admin-logged-out" data-admin-logged-out-only>
-    <div class="hero">
-      <h1>관리자 권한이 필요합니다</h1>
-      <p>이 페이지에 접근하려면 관리자 계정으로 로그인해야 합니다.</p>
-      <a href="{{ url_for('auth.login') }}" class="btn btn--primary">로그인</a>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

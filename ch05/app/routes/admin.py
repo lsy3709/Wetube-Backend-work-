@@ -1,8 +1,30 @@
-"""관리자 라우트 – 프론트 전용, DB/백엔드 없음."""
+"""관리자 라우트 – DB 실데이터 연동, Flask-Login 인증."""
 
-from flask import Blueprint, render_template, redirect, url_for
+from pathlib import Path
+
+from flask import Blueprint, current_app, redirect, render_template, request, send_file, url_for
+from flask_login import current_user, login_required
+from sqlalchemy.orm import joinedload
+
+from app import db
+from app.models import User, Video
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
+
+
+def _admin_required(f):
+    """관리자 권한 필수. 비로그인 → 로그인, 일반 유저 → 403."""
+    from functools import wraps
+
+    @wraps(f)
+    def wrapped(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for("auth.login", next=url_for("admin.index")))
+        if not current_user.is_admin:
+            return render_template("errors/403.html"), 403
+        return f(*args, **kwargs)
+
+    return wrapped
 
 
 @admin_bp.route("/login")
@@ -11,36 +33,127 @@ def login():
 
 
 @admin_bp.route("/")
+@login_required
+@_admin_required
 def index():
-    return render_template("admin/index.html")
+    """관리자 대시보드 – DB 실통계."""
+    stats = {
+        "user_count": User.query.count(),
+        "video_count": Video.query.count(),
+        "channel_count": User.query.count(),  # 사용자 = 채널
+        "comment_count": 0,  # Comment 모델 미구현 시 0
+    }
+    try:
+        from sqlalchemy import text
+
+        r = db.session.execute(text("SELECT COUNT(*) FROM comments")).scalar()
+        stats["comment_count"] = int(r) if r else 0
+    except Exception:
+        pass
+    return render_template("admin/index.html", stats=stats)
 
 
 @admin_bp.route("/users")
+@login_required
+@_admin_required
 def users():
-    return render_template("admin/users.html")
+    """회원 관리 – DB users 테이블 연동. q 파라미터로 검색."""
+    from sqlalchemy import or_
+
+    page = request.args.get("page", 1, type=int)
+    q_param = (request.args.get("q") or "").strip()
+    if page < 1:
+        page = 1
+
+    query = User.query
+    if q_param:
+        pattern = f"%{q_param}%"
+        query = query.filter(
+            or_(
+                User.username.ilike(pattern),
+                User.email.ilike(pattern),
+                User.nickname.ilike(pattern),
+            )
+        )
+    pagination = query.order_by(User.created_at.desc()).paginate(
+        page=page, per_page=15
+    )
+    return render_template("admin/users.html", users=pagination)
 
 
 @admin_bp.route("/videos")
+@login_required
+@_admin_required
 def videos():
-    return render_template("admin/videos.html")
+    """동영상 관리 – DB videos 테이블 연동. q 파라미터로 제목/업로더 검색."""
+    from sqlalchemy import or_
+
+    page = request.args.get("page", 1, type=int)
+    q_param = (request.args.get("q") or "").strip()
+    if page < 1:
+        page = 1
+
+    query = Video.query.options(joinedload(Video.user))
+    if q_param:
+        pattern = f"%{q_param}%"
+        query = query.join(Video.user).filter(
+            or_(
+                Video.title.ilike(pattern),
+                User.username.ilike(pattern),
+            )
+        )
+    pagination = query.order_by(Video.created_at.desc()).paginate(
+        page=page, per_page=15
+    )
+    return render_template("admin/videos.html", videos=pagination)
 
 
 @admin_bp.route("/comments")
+@login_required
+@_admin_required
 def comments():
     return render_template("admin/comments.html")
 
 
 @admin_bp.route("/database")
+@login_required
+@_admin_required
 def database():
     return render_template("admin/database.html")
 
 
+@admin_bp.route("/api-preview")
+@login_required
+@_admin_required
+def api_preview():
+    """REST API 데이터 미리보기 화면. JS에서 /api/videos, /api/tags/popular 호출."""
+    return render_template("admin/api_preview.html")
+
+
+@admin_bp.route("/db-verify")
+@login_required
+@_admin_required
+def db_verify():
+    """
+    DB 검증 리포트 화면. scripts/db_verify.py 실행 후 생성된 리포트를 표시.
+    리포트 없으면 안내 페이지.
+    """
+    report_path = Path(current_app.instance_path) / "db_verify_report.html"
+    if report_path.exists():
+        return send_file(str(report_path), mimetype="text/html")
+    return render_template("admin/db_verify_placeholder.html")
+
+
 @admin_bp.route("/query")
+@login_required
+@_admin_required
 def query():
     return render_template("admin/query.html")
 
 
 @admin_bp.route("/table/<table_name>")
+@login_required
+@_admin_required
 def table_view(table_name):
     # 프론트 전용: 테이블별 구조 및 샘플 데이터
     TABLES = {

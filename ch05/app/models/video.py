@@ -48,6 +48,7 @@ class Video(db.Model):
 
     # ----- 작성자 (users.id 참조. 유저 삭제 시 해당 영상도 CASCADE 삭제) -----
     user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user = db.relationship("User", backref=db.backref("uploaded_videos", lazy="dynamic"))
 
     # ----- 타임스탬프 -----
     created_at = db.Column(db.DateTime, default=_utc_now)                    # 업로드 시각
@@ -60,6 +61,18 @@ class Video(db.Model):
         backref=db.backref("videos", lazy="dynamic"),
         lazy="select",  # save_tags에서 목록 할당을 위해 select 사용
     )
+
+    def get_video_url(self):
+        """비디오 파일 재생 URL 반환 (main.media_video)."""
+        from flask import url_for
+        return url_for("main.media_video", filename=self.video_path)
+
+    def get_thumbnail_url(self):
+        """썸네일 이미지 URL 반환 (poster 등). 없으면 None."""
+        if not self.thumbnail_path:
+            return None
+        from flask import url_for
+        return url_for("main.media_thumbnail", filename=self.thumbnail_path)
 
     def save_tags(self, tag_string, commit=True):
         """

@@ -1,52 +1,27 @@
 /**
- * 로그인 페이지 – 프론트 전용.
- * 일반: aaa / 123456 → /
- * 관리자: admin / 1234qwer → /admin/
+ * 로그인 페이지 – Flask 백엔드 연결.
+ * 폼이 POST /auth/login 으로 제출되고, 서버에서 검증 후 리다이렉트 또는 에러 렌더.
+ * flash 메시지는 base.html에서 표시됨.
  */
 
 (function () {
-  const STORAGE_KEY = 'wetube_logged_in';
-  const USER_KEY = 'wetube_user';
-  const ADMIN_KEY = 'wetube_admin_logged_in';
-
   const form = document.getElementById('login-form');
-  const username = document.getElementById('login-username');
-  const password = document.getElementById('login-password');
   const errorEl = document.getElementById('login-error');
 
   if (!form) return;
 
+  // 필수 입력 등 클라이언트 검증만. 실제 인증은 서버에서 수행. 에러는 base flash로 표시.
   form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var user = (username && username.value) || '';
-    var pass = (password && password.value) || '';
-
-    if (errorEl) {
-      errorEl.textContent = '';
-      errorEl.classList.remove('is-visible', 'auth-msg--error');
-    }
-
-    // 관리자 로그인
-    if (user === 'admin' && pass === '1234qwer') {
-      sessionStorage.setItem(STORAGE_KEY, '1');
-      sessionStorage.setItem(USER_KEY, 'admin');
-      sessionStorage.setItem(ADMIN_KEY, '1');
-      window.location.href = '/admin/';
+    const loginId = document.getElementById('login-id');
+    const password = document.getElementById('login-password');
+    if ((!loginId || !loginId.value.trim()) || (!password || !password.value)) {
+      e.preventDefault();
+      if (errorEl) {
+        errorEl.textContent = '아이디/이메일과 비밀번호를 입력해주세요.';
+        errorEl.classList.add('is-visible', 'auth-msg--error');
+      }
       return;
     }
-
-    // 일반 사용자 로그인
-    if (user === 'aaa' && pass === '123456') {
-      sessionStorage.setItem(STORAGE_KEY, '1');
-      sessionStorage.setItem(USER_KEY, 'aaa');
-      sessionStorage.removeItem(ADMIN_KEY);
-      window.location.href = '/';
-      return;
-    }
-
-    if (errorEl) {
-      errorEl.textContent = '사용자명 또는 비밀번호가 올바르지 않습니다.';
-      errorEl.classList.add('is-visible', 'auth-msg--error');
-    }
+    // 검증 통과 시 폼이 서버로 제출됨
   });
 })();

@@ -3,42 +3,42 @@
 {% block title %}관리자 대시보드 - WeTube{% endblock %}
 
 {% block content %}
-  <div class="admin-page" data-admin-logged-in-only>
+  <div class="admin-page">
     <div class="admin-header">
       <h1 class="admin-title">관리자 대시보드</h1>
       <div class="admin-header-actions">
-        <button type="button" class="btn btn--outline" id="admin-logout-btn">로그아웃</button>
+        <a href="{{ url_for('auth.logout') }}" class="btn btn--outline">로그아웃</a>
       </div>
     </div>
 
     <div class="admin-content">
-      <!-- 통계 카드 -->
+      <!-- 통계 카드 (DB 실데이터) -->
       <div class="admin-stats">
         <div class="admin-stat-card">
           <div class="stat-icon">👥</div>
           <div class="stat-info">
-            <div class="stat-value">1,234</div>
+            <div class="stat-value">{{ stats.user_count|default(0) }}</div>
             <div class="stat-label">전체 사용자</div>
           </div>
         </div>
         <div class="admin-stat-card">
           <div class="stat-icon">📹</div>
           <div class="stat-info">
-            <div class="stat-value">5,678</div>
+            <div class="stat-value">{{ stats.video_count|default(0) }}</div>
             <div class="stat-label">전체 동영상</div>
           </div>
         </div>
         <div class="admin-stat-card">
           <div class="stat-icon">📺</div>
           <div class="stat-info">
-            <div class="stat-value">890</div>
+            <div class="stat-value">{{ stats.channel_count|default(0) }}</div>
             <div class="stat-label">전체 채널</div>
           </div>
         </div>
         <div class="admin-stat-card">
           <div class="stat-icon">💬</div>
           <div class="stat-info">
-            <div class="stat-value">12,345</div>
+            <div class="stat-value">{{ stats.comment_count|default(0) }}</div>
             <div class="stat-label">전체 댓글</div>
           </div>
         </div>
@@ -68,6 +68,12 @@
           <div class="menu-icon">🗄️</div>
           <h3 class="menu-title">데이터베이스 관리</h3>
           <p class="menu-description">DB 조회, 백업, 유지보수</p>
+        </a>
+
+        <a href="{{ url_for('admin.api_preview') }}" class="admin-menu-card">
+          <div class="menu-icon">🔌</div>
+          <h3 class="menu-title">API 미리보기</h3>
+          <p class="menu-description">REST API 실시간 데이터 조회</p>
         </a>
       </div>
 
@@ -105,14 +111,6 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <div class="admin-logged-out" data-admin-logged-out-only>
-    <div class="hero">
-      <h1>관리자 권한이 필요합니다</h1>
-      <p>이 페이지에 접근하려면 관리자 계정으로 로그인해야 합니다.</p>
-      <a href="{{ url_for('auth.login') }}" class="btn btn--primary">로그인</a>
     </div>
   </div>
 {% endblock %}

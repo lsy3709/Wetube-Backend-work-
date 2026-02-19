@@ -2,13 +2,135 @@
 
 import os
 import uuid
+from datetime import datetime, timedelta, timezone
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+from sqlalchemy import func
 
 from app import db
 from app.models import Video
 
 studio_bp = Blueprint("studio", __name__, url_prefix="/studio")
+
+
+def _current_user_id():
+    """로그인한 사용자 ID. 미로그인 시 config 기본값 (폴백)."""
+    if current_user.is_authenticated:
+        return current_user.id
+    return current_app.config.get("DEFAULT_USER_ID", 1)
+
+
+def _require_video_owner(video):
+    """동영상 소유자 또는 관리자만 접근 허용. 아니면 403."""
+    if video.user_id == _current_user_id():
+        return
+    from flask_login import current_user
+
+    if current_user.is_authenticated and current_user.is_admin:
+        return
+    abort(403)
+
+
+def _get_studio_stats(user_id):
+    """
+    로그인한 사용자의 총 조회수 합계와 영상 개수를 DB 집계로 반환.
+    반환: (total_views, video_count). 데이터 없으면 (0, 0).
+    """
+    row = (
+        db.session.query(
+            func.coalesce(func.sum(Video.views), 0).label("total_views"),
+            func.count(Video.id).label("video_count"),
+        )
+        .filter(Video.user_id == user_id)
+        .first()
+    )
+    if row is None:
+        return 0, 0
+    total_views = int(row.total_views) if row.total_views is not None else 0
+    video_count = int(row.video_count) if row.video_count is not None else 0
+    return total_views, video_count
+
+
+def _get_studio_dashboard_data(user_id):
+    """
+    스튜디오 대시보드용 통계·최근 활동·인기 영상 데이터 반환.
+    반환: dict (stats, recent_7d, recent_30d, top_videos)
+    """
+    row = (
+        db.session.query(
+            func.count(Video.id).label("video_count"),
+            func.coalesce(func.sum(Video.views), 0).label("total_views"),
+            func.coalesce(func.sum(Video.likes), 0).label("total_likes"),
+        )
+        .filter(Video.user_id == user_id)
+        .first()
+    )
+    video_count = int(row.video_count or 0)
+    total_views = int(row.total_views or 0)
+    total_likes = int(row.total_likes or 0)
+    total_comments = 0
+    try:
+        from sqlalchemy import text
+
+        r = db.session.execute(
+            text(
+                "SELECT COUNT(*) FROM comments c "
+                "INNER JOIN videos v ON c.video_id = v.id WHERE v.user_id = :uid"
+            ),
+            {"uid": user_id},
+        ).scalar()
+        total_comments = int(r or 0)
+    except Exception:
+        pass
+    avg_views = round(total_views / video_count, 1) if video_count else 0
+    avg_likes = round(total_likes / video_count, 1) if video_count else 0.0
+
+    stats = {
+        "video_count": video_count,
+        "total_views": total_views,
+        "total_likes": total_likes,
+        "total_comments": total_comments,
+        "avg_views": avg_views,
+        "avg_likes": avg_likes,
+    }
+
+    now = datetime.now(timezone.utc)
+    since_7d = now - timedelta(days=7)
+    since_30d = now - timedelta(days=30)
+
+    def _recent(since):
+        r = (
+            db.session.query(
+                func.count(Video.id).label("cnt"),
+                func.coalesce(func.sum(Video.views), 0).label("views"),
+                func.coalesce(func.sum(Video.likes), 0).label("likes"),
+            )
+            .filter(Video.user_id == user_id, Video.created_at >= since)
+            .first()
+        )
+        return {
+            "video_count": int(r.cnt or 0),
+            "views": int(r.views or 0),
+            "likes": int(r.likes or 0),
+        }
+
+    recent_7d = _recent(since_7d)
+    recent_30d = _recent(since_30d)
+
+    top_videos = (
+        Video.query.filter_by(user_id=user_id)
+        .order_by(Video.views.desc())
+        .limit(5)
+        .all()
+    )
+
+    return {
+        "stats": stats,
+        "recent_7d": recent_7d,
+        "recent_30d": recent_30d,
+        "top_videos": top_videos,
+    }
 
 
 def _allowed_file(filename, allowed_extensions):
@@ -50,19 +172,23 @@ def _save_upload_file(file_storage, save_dir, allowed_extensions, max_size):
 
 @studio_bp.route("/")
 @studio_bp.route("")  # /studio (끝 슬래시 없음)도 처리
+@login_required
 def index():
-    user_id = current_app.config.get("DEFAULT_USER_ID", 1)
+    user_id = _current_user_id()
     videos = Video.query.filter_by(user_id=user_id).order_by(Video.created_at.desc()).all()
-    total_views = sum(v.views for v in videos)
+    dashboard = _get_studio_dashboard_data(user_id)
     return render_template(
         "studio/index.html",
         videos=videos,
-        video_count=len(videos),
-        total_views=total_views,
+        stats=dashboard["stats"],
+        recent_7d=dashboard["recent_7d"],
+        recent_30d=dashboard["recent_30d"],
+        top_videos=dashboard["top_videos"],
     )
 
 
 @studio_bp.route("/upload", methods=["GET", "POST"])
+@login_required
 def upload():
     if request.method == "GET":
         return render_template("studio/upload.html")
@@ -115,7 +241,7 @@ def upload():
             return render_template("studio/upload.html", title=title, description=description, category=category_input, tags=tags_input), 400
 
     # DB에 Video 저장
-    user_id = current_app.config.get("DEFAULT_USER_ID", 1)
+    user_id = _current_user_id()
     try:
         video = Video(
             title=title,
@@ -149,11 +275,16 @@ def upload():
 
 
 @studio_bp.route("/edit/<int:video_id>", methods=["GET", "POST"])
+@login_required
 def edit(video_id):
     video = Video.query.get_or_404(video_id)
+    _require_video_owner(video)
     if request.method == "POST":
         title = (request.form.get("title") or "").strip()
         description = (request.form.get("description") or "").strip()
+        category = (request.form.get("category") or "").strip() or None
+        tags_str = (request.form.get("tags") or "").strip()
+        current_app.logger.info("studio.edit POST video_id=%s title=%r", video_id, title)
         if not title:
             flash("제목을 입력해주세요.", "error")
             return render_template("studio/edit.html", video=video), 400
@@ -162,10 +293,56 @@ def edit(video_id):
             return render_template("studio/edit.html", video=video), 400
         video.title = title
         video.description = description or None
-        video.category = (request.form.get("category") or "").strip() or None
-        tags_str = (request.form.get("tags") or "").strip()
+        video.category = category
         video.save_tags(tags_str, commit=False)
-        db.session.commit()
+        db.session.flush()
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.exception("studio.edit commit 실패 video_id=%s: %s", video_id, e)
+            flash(f"저장 중 오류가 발생했습니다: {e}", "error")
+            return render_template("studio/edit.html", video=video), 500
+        current_app.logger.info("studio.edit committed video_id=%s new_title=%r", video_id, title)
         flash("동영상 정보가 수정되었습니다.", "success")
-        return redirect(url_for("studio.index"))
+        return redirect(url_for("main.watch", video_id=video_id))
     return render_template("studio/edit.html", video=video)
+
+
+@studio_bp.route("/delete/<int:video_id>", methods=["POST"])
+@login_required
+def delete(video_id):
+    """
+    동영상 삭제: DB 레코드 먼저 삭제 후, 성공 시 uploads/ 내 실제 파일 삭제.
+    파일이 없어도 DB 삭제는 완료 (고아 파일 방지).
+    로그인 미구현: 소유자(DEFAULT_USER_ID)만 삭제 가능.
+    """
+    video = Video.query.get_or_404(video_id)
+    _require_video_owner(video)
+    video_path = video.video_path
+    thumbnail_path = video.thumbnail_path
+
+    db.session.delete(video)
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash(f"삭제 중 오류가 발생했습니다: {e}", "error")
+        return redirect(url_for("studio.edit", video_id=video_id))
+
+    # DB 삭제 성공 후 실제 파일 삭제 (파일 없어도 OSError 무시)
+    video_folder = current_app.config["VIDEO_FOLDER"]
+    thumb_folder = current_app.config["THUMBNAIL_FOLDER"]
+    if video_path:
+        try:
+            os.remove(os.path.join(video_folder, video_path))
+        except OSError:
+            pass
+    if thumbnail_path:
+        try:
+            os.remove(os.path.join(thumb_folder, thumbnail_path))
+        except OSError:
+            pass
+
+    flash("동영상이 삭제되었습니다.", "success")
+    return redirect(url_for("studio.index"))

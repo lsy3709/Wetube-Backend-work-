@@ -105,19 +105,21 @@
           <small class="form-hint">공개: 누구나 볼 수 있음 | 일부 공개: 링크를 아는 사람만 볼 수 있음 | 비공개: 나만 볼 수 있음</small>
         </div>
 
-        <!-- 저장/삭제 버튼 -->
+        <!-- 저장 버튼: 폼 안에 두어 네이티브 POST 제출 보장 -->
         <div class="upload-actions">
-          <button type="button" class="btn btn--danger btn--large" id="edit-delete-btn">
-            삭제
-          </button>
-          <div class="upload-actions-right">
+          <div class="upload-actions-right" style="margin-left: auto;">
             <a href="{{ url_for('studio.index') }}" class="btn btn--outline btn--large">취소</a>
-            <button type="submit" class="btn btn--primary btn--large" id="edit-submit-btn">
-              저장
-            </button>
+            <button type="submit" class="btn btn--primary btn--large" id="edit-submit-btn">저장</button>
           </div>
         </div>
       </form>
+
+      <!-- 삭제는 별도 폼 (저장과 분리) -->
+      <div class="upload-actions" style="margin-top: 0.5rem;">
+        <form id="delete-form" method="post" action="{{ url_for('studio.delete', video_id=video.id) }}" style="display: inline;">
+          <button type="submit" class="btn btn--danger btn--large" id="edit-delete-btn">삭제</button>
+        </form>
+      </div>
     </div>
   </div>
 {% endblock %}

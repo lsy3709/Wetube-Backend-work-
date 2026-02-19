@@ -1,5 +1,6 @@
 /**
- * Studio 영상 수정 페이지 – 프론트 전용. DB·백엔드 없음.
+ * Studio 영상 수정 페이지 – 수정(저장) / 삭제 연동.
+ * 저장: 중복 제출 방지(버튼 비활성화). 삭제: 확인창 후 제출, 중복 클릭 방지.
  */
 
 (function () {
@@ -67,48 +68,19 @@
     }
   }
 
-  // 폼 제출 (저장)
-  if (form) {
-    form.addEventListener('submit', function (e) {
+  // 수정 폼(저장): submit 리스너 없음 → 브라우저 네이티브 제출만 사용 (테이블 미반영 방지).
+  // 제목은 input required 로 필수 검사.
+
+  // 삭제 폼 – 확인창 후 제출, 중복 클릭 방지
+  const deleteForm = document.getElementById('delete-form');
+  if (deleteForm && deleteBtn) {
+    deleteForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      if (!msgEl) return;
-
-      const title = titleInput && titleInput.value.trim();
-
-      if (!title) {
-        msgEl.textContent = '제목을 입력해주세요.';
-        msgEl.className = 'auth-msg auth-msg--error is-visible';
-        titleInput && titleInput.focus();
-        return;
-      }
-
-      // 프론트엔드 전용 메시지
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.textContent = '저장 중...';
-      }
-
-      setTimeout(function () {
-        msgEl.textContent = '프론트엔드 전용입니다. 실제 저장 기능은 추후 구현됩니다.';
-        msgEl.className = 'auth-msg auth-msg--success is-visible';
-
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.textContent = '저장';
-        }
-      }, 1000);
-    });
-  }
-
-  // 삭제 버튼
-  if (deleteBtn) {
-    deleteBtn.addEventListener('click', function () {
-      if (confirm('정말로 이 동영상을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
-        if (msgEl) {
-          msgEl.textContent = '프론트엔드 전용입니다. 실제 삭제 기능은 추후 구현됩니다.';
-          msgEl.className = 'auth-msg auth-msg--success is-visible';
-        }
-      }
+      if (deleteBtn.disabled) return;
+      if (!confirm('정말 삭제하시겠습니까?\n삭제된 동영상은 복구할 수 없습니다.')) return;
+      deleteBtn.disabled = true;
+      deleteBtn.textContent = '삭제 중...';
+      deleteForm.submit();
     });
   }
 

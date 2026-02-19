@@ -1,8 +1,11 @@
 """
 사용자 모델 – users 테이블 (Video FK용).
-업로드 시 config.DEFAULT_USER_ID(1)가 이 테이블의 id를 참조.
+Flask-Login UserMixin, 비밀번호 해싱 지원.
 """
 from datetime import datetime, timezone
+
+from flask_login import UserMixin
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
 
@@ -12,10 +15,9 @@ def _utc_now():
     return datetime.now(timezone.utc)
 
 
-class User(db.Model):
-    """사용자 – 업로드 시 user_id FK용."""
+class User(UserMixin, db.Model):
+    """사용자 – Flask-Login 연동, 비밀번호 해싱."""
 
-    # 테이블명. 지정하지 않으면 클래스명을 소문자로 변환한 이름 사용
     __tablename__ = "users"
 
     # ----- 기본 키 -----
@@ -35,3 +37,36 @@ class User(db.Model):
     # ----- 타임스탬프 -----
     created_at = db.Column(db.DateTime, default=_utc_now)                    # 최초 생성 시각
     updated_at = db.Column(db.DateTime, default=_utc_now, onupdate=_utc_now)  # 수정 시 자동 갱신
+
+    # ----- 구독 관계 -----
+    subscriptions_rel = db.relationship(
+        "Subscription",
+        foreign_keys="Subscription.subscriber_id",
+        backref=db.backref("subscriber", lazy="joined"),
+        lazy="dynamic",
+    )
+    subscribers_rel = db.relationship(
+        "Subscription",
+        foreign_keys="Subscription.subscribed_to_id",
+        backref=db.backref("channel", lazy="joined"),
+        lazy="dynamic",
+    )
+
+    def set_password(self, password):
+        """비밀번호를 안전하게 해싱하여 password_hash에 저장."""
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        """입력한 비밀번호가 저장된 해시와 일치하는지 검증."""
+        return check_password_hash(self.password_hash, password)
+
+    def get_profile_image_url(self):
+        """
+        프로필 이미지 URL 반환 (main.media_profile).
+        없으면 None. 템플릿에서 url_for('main.media_profile', filename=...) 와 동일.
+        """
+        if not self.profile_image:
+            return None
+        from flask import url_for
+
+        return url_for("main.media_profile", filename=self.profile_image)
