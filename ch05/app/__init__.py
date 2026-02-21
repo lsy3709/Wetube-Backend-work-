@@ -111,9 +111,11 @@ def create_app():
     from app.routes.admin import admin_bp
     from app.routes.api import api_bp
     from app.routes.comments import comments_bp
+    from app.routes.likes import likes_bp
 
     app.register_blueprint(main_bp)
     app.register_blueprint(comments_bp)
+    app.register_blueprint(likes_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(studio_bp)
     app.register_blueprint(admin_bp)

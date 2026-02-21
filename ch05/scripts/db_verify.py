@@ -30,7 +30,7 @@ def _capture_db_state(db_session):
     """DB 세션의 주요 테이블 데이터를 딕셔너리로 추출."""
     from sqlalchemy import text
 
-    tables = ["users", "videos", "tags", "video_tags", "subscriptions"]
+    tables = ["users", "videos", "tags", "video_tags", "subscriptions", "comments"]
     state = {}
 
     for table in tables:
@@ -191,7 +191,7 @@ def generate_report(before, after, scenario_name, api_response, changes):
 
         api_html = f"<h3>API 응답 (일부)</h3><pre>{json.dumps(api_response, indent=2, ensure_ascii=False)[:1500]}...</pre>"
 
-    tables = ["users", "videos", "tags", "video_tags", "subscriptions"]
+    tables = ["users", "videos", "tags", "video_tags", "subscriptions", "comments"]
     before_section = ""
     after_section = ""
     for t in tables:

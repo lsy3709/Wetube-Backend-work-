@@ -12,6 +12,7 @@
 
       <p id="profile-msg" class="auth-msg" role="status" aria-live="polite"></p>
       <form id="profile-form" class="auth-form" method="post" action="{{ url_for('auth.profile') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <!-- 프로필 사진 (맨 위) -->
         <div class="form-group profile-image-group mypage-profile-top">
           <label>프로필 사진</label>

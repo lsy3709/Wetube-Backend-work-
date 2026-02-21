@@ -27,13 +27,13 @@
           <!-- 액션 버튼 -->
           <div class="video-actions">
             <div class="video-actions-left">
-              <button type="button" class="action-btn" id="btn-like" title="좋아요" data-initial-likes="{{ video.likes }}">
-                <span class="action-icon">👍</span>
+              <button type="button" class="action-btn action-btn--like" id="btn-like" title="좋아요" data-video-id="{{ video.id }}" data-initial-likes="{{ video.likes }}">
+                <span class="action-icon action-icon--heart" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                  </svg>
+                </span>
                 <span class="action-count">{{ video.likes }}</span>
-              </button>
-              <button type="button" class="action-btn" id="btn-dislike" title="싫어요">
-                <span class="action-icon">👎</span>
-                <span class="action-count">0</span>
               </button>
               <button type="button" class="action-btn" id="btn-share" title="공유">
                 <span class="action-icon">📤</span>
@@ -241,7 +241,7 @@
             <div class="related-video-info">
               <h4 class="related-video-title">{{ v.title }}</h4>
               <a href="{{ url_for('main.user_profile', username=v.user.username if v.user else 'default') }}" class="related-video-channel" onclick="event.stopPropagation();">{{ v.user.username if v.user else 'default' }}</a>
-              <p class="related-video-meta">조회수 {{ v.views }}회</p>
+              <p class="related-video-meta">조회수 {{ v.views }}회 · 좋아요 {{ v.likes|default(0) }}</p>
             </div>
           </a>
           {% else %}

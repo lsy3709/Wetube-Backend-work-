@@ -70,7 +70,7 @@
         '<h3 class="video-card-title">' + escapeHtml(v.title || '') + '</h3>' +
       '</a>' +
       '<a href="' + profileUrl + '" class="video-card-channel">' + escapeHtml(channel) + '</a>' +
-      '<p class="video-card-meta">조회수 ' + (v.views || 0) + '회</p>' +
+      '<p class="video-card-meta">조회수 ' + (v.views || 0) + '회 · 좋아요 ' + (v.likes || 0) + '</p>' +
       (tagsHtml ? '<div class="video-card-tags">' + tagsHtml + '</div>' : '');
     return card;
   }

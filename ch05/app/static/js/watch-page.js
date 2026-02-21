@@ -5,29 +5,67 @@
 (function () {
   // 로그인 미연동: 시청은 로그인 없이 사용 가능 (업로드와 동일)
 
-  // 좋아요/싫어요 버튼
+  // 좋아요 버튼 – GET /video/<id>/like/status로 초기화, POST /video/<id>/like로 토글
   const likeBtn = document.getElementById('btn-like');
-  const dislikeBtn = document.getElementById('btn-dislike');
+  const videoId = likeBtn && likeBtn.dataset.videoId;
 
-  if (likeBtn) {
+  // 페이지 로드 시: GET /video/<id>/like/status로 현재 좋아요 상태 불러오기
+  if (likeBtn && videoId) {
+    fetch('/video/' + videoId + '/like/status')
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.success) {
+          if (data.is_liked) likeBtn.classList.add('active');
+          var countEl = likeBtn.querySelector('.action-count');
+          if (countEl) countEl.textContent = data.likes_count;
+        }
+      })
+      .catch(function () { /* 상태 조회 실패 시 초기값 유지 */ });
+
     likeBtn.addEventListener('click', function () {
-      this.classList.toggle('active');
-      if (dislikeBtn) dislikeBtn.classList.remove('active');
-      // 좋아요 수 갱신 (백엔드 연동 전: 로컬 UI만. 추후 POST /api/videos/<id>/like 구현 시 연동)
-      const countEl = this.querySelector('.action-count');
-      if (countEl) {
-        const initial = parseInt(this.dataset.initialLikes || '0', 10) || 0;
-        const delta = this.classList.contains('active') ? 1 : -1;
-        const current = parseInt(countEl.textContent, 10) || initial;
-        countEl.textContent = Math.max(0, current + delta);
-      }
-    });
-  }
+      var btn = this;
+      if (btn.disabled) return;
 
-  if (dislikeBtn) {
-    dislikeBtn.addEventListener('click', function () {
-      this.classList.toggle('active');
-      if (likeBtn) likeBtn.classList.remove('active');
+      // 비로그인 시 로그인 페이지로 이동
+      var body = document.body;
+      if (body && !body.classList.contains('is-logged-in')) {
+        if (confirm('로그인 후 좋아요를 누를 수 있습니다. 로그인 페이지로 이동할까요?')) {
+          window.location.href = '/auth/login?next=' + encodeURIComponent(window.location.pathname);
+        }
+        return;
+      }
+
+      btn.disabled = true;
+
+      var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+      var headers = { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+      if (csrfMeta) headers['X-CSRFToken'] = csrfMeta.getAttribute('content');
+
+      fetch('/video/' + videoId + '/like', {
+        method: 'POST',
+        headers: headers,
+        credentials: 'same-origin',
+      })
+        .then(function (r) {
+          // 세션 만료 시 302 리다이렉트 → 로그인 페이지로 이동
+          if (r.redirected || r.status === 302) {
+            window.location.href = '/auth/login?next=' + encodeURIComponent(window.location.pathname);
+            return null;
+          }
+          return r.json();
+        })
+        .then(function (data) {
+          if (!data) return;
+          if (data.success) {
+            data.is_liked ? btn.classList.add('active') : btn.classList.remove('active');
+            var countEl = btn.querySelector('.action-count');
+            if (countEl) countEl.textContent = data.likes_count;
+          } else {
+            alert(data.error || '오류가 발생했습니다.');
+          }
+        })
+        .catch(function () { alert('요청 실패'); })
+        .finally(function () { btn.disabled = false; });
     });
   }
 

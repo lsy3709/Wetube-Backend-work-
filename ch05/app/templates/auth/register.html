@@ -8,6 +8,7 @@
       <h1>회원가입</h1>
       <p id="register-msg" class="auth-msg" role="status" aria-live="polite" style="display:none;"></p>
       <form id="register-form" class="auth-form" method="post" action="{{ url_for('auth.register') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
           <label for="register-username">사용자명 <span class="required">*</span></label>
           <input type="text" id="register-username" name="username" placeholder="사용자명" autocomplete="username" value="{{ username or '' }}" required>

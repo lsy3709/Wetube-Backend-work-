@@ -70,6 +70,7 @@
             </h3>
             <div class="result-meta">
               <span class="result-views">조회수 {{ video.views }}회</span>
+              <span class="result-likes">· 좋아요 {{ video.likes|default(0) }}</span>
               <span class="result-date">· {{ video.created_at.strftime('%Y-%m-%d') if video.created_at else '' }}</span>
             </div>
             <div class="result-channel">

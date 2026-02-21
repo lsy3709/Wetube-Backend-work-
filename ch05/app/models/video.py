@@ -20,6 +20,15 @@ video_tags = db.Table(
     db.Column("created_at", db.DateTime, default=_utc_now),
 )
 
+# Video ↔ User N:M 좋아요 중간 테이블 (table.sql의 video_likes)
+# 사용자가 좋아요를 누르면 (user_id, video_id) 레코드가 추가됨
+video_likes = db.Table(
+    "video_likes",
+    db.Column("user_id", db.Integer, db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("video_id", db.Integer, db.ForeignKey("videos.id", ondelete="CASCADE"), primary_key=True),
+    db.Column("created_at", db.DateTime, default=_utc_now),
+)
+
 
 class Video(db.Model):
     """업로드된 동영상 정보."""

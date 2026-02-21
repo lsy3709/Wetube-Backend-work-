@@ -25,7 +25,7 @@
             <h3 class="video-card-title">{{ video.title }}</h3>
           </a>
           <a href="{{ url_for('main.user_profile', username=video.user.username if video.user else 'default') }}" class="video-card-channel">{{ video.user.username if video.user else 'default' }}</a>
-          <p class="video-card-meta">조회수 {{ video.views }}회</p>
+          <p class="video-card-meta">조회수 {{ video.views }}회 · 좋아요 {{ video.likes|default(0) }}</p>
           <p class="video-card-time">{{ video.created_at.strftime('%Y-%m-%d') if video.created_at else '' }}</p>
         </article>
         {% endfor %}

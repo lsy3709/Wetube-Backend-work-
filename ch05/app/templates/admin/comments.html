@@ -15,23 +15,15 @@
     </div>
 
     <div class="admin-content">
-      <!-- 검색 / 필터 -->
+      <!-- 검색 -->
       <div class="admin-toolbar">
-        <div class="admin-search">
-          <input type="search" id="comment-search" class="admin-search-input" placeholder="댓글 내용, 작성자 검색">
-          <button type="button" class="btn btn--primary" id="btn-search">검색</button>
-        </div>
-        <div class="admin-filters">
-          <select id="comment-status-filter" class="admin-select">
-            <option value="all">전체 상태</option>
-            <option value="normal">정상</option>
-            <option value="reported">신고됨</option>
-            <option value="deleted">삭제됨</option>
-          </select>
-        </div>
+        <form method="get" action="{{ url_for('admin.comments') }}" class="admin-search-form">
+          <input type="search" name="q" id="comment-search" class="admin-search-input" placeholder="댓글 내용, 작성자 검색" value="{{ request.args.get('q', '') }}">
+          <button type="submit" class="btn btn--primary" id="btn-search">검색</button>
+        </form>
       </div>
 
-      <!-- 댓글 목록 테이블 -->
+      <!-- 댓글 목록 테이블 (DB 연동) -->
       <div class="admin-table-wrap">
         <table class="admin-table admin-table--comments">
           <thead>
@@ -41,28 +33,35 @@
               <th class="col-author">작성자</th>
               <th class="col-content">댓글 내용</th>
               <th class="col-date">작성일</th>
-              <th class="col-status">상태</th>
+              <th class="col-parent">답글</th>
               <th class="col-actions">관리</th>
             </tr>
           </thead>
           <tbody>
-            {% for i in range(8) %}
+            {% for c in comments.items or [] %}
             <tr>
-              <td class="col-num">{{ i + 1 }}</td>
+              <td class="col-num">{{ c.id }}</td>
               <td class="col-video">
-                <a href="{{ url_for('main.watch', video_id=i+1) }}" class="video-link">샘플 동영상 {{ i + 1 }}</a>
+                <a href="{{ url_for('main.watch', video_id=c.video_id) }}" class="video-link">{{ c.video.title if c.video else '(삭제됨)' }}</a>
               </td>
-              <td class="col-author">{{ ['사용자1', '게스트', '테스터', 'aaa', 'lsye', '마로아빠', 'user1', 'guest'][i] }}</td>
+              <td class="col-author">{{ c.user.username if c.user else '(알 수 없음)' }}</td>
               <td class="col-content">
-                <span class="comment-text-preview">{{ ['좋은 영상이네요!', '잘 봤습니다. 구독했어요!', '프론트엔드 테스트 댓글입니다.', '유익한 정보 감사합니다.', '재미있게 봤어요 👍', '다음 영상 기대할게요!', '추천합니다.', '핵심만 잘 정리했네요.'][i] }}</span>
+                <span class="comment-text-preview">{{ c.content[:80] }}{% if c.content|length > 80 %}...{% endif %}</span>
               </td>
-              <td class="col-date">2025.{{ '%02d'|format(12 - i) }}.{{ '%02d'|format(10 + i) }}</td>
-              <td class="col-status">
-                <span class="status-badge status-active">정상</span>
-              </td>
+              <td class="col-date">{{ c.created_at.strftime('%Y.%m.%d %H:%M') if c.created_at else '' }}</td>
+              <td class="col-parent">{{ '대댓글' if c.parent_id else '-' }}</td>
               <td class="col-actions">
-                <button type="button" class="btn-icon btn-icon--danger" title="삭제">🗑️</button>
+                <form method="post" action="{{ url_for('admin.comment_delete', comment_id=c.id) }}" class="admin-delete-form" style="display: inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="page" value="{{ comments.page }}">
+                  <input type="hidden" name="q" value="{{ request.args.get('q', '') }}">
+                  <button type="submit" class="btn-icon btn-icon--danger" title="삭제" onclick="return confirm('이 댓글을 삭제할까요?');">🗑️</button>
+                </form>
               </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="admin-empty">댓글이 없습니다.</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -70,11 +69,21 @@
       </div>
 
       <!-- 페이지네이션 -->
+      {% if comments.pages > 1 %}
       <div class="admin-pagination">
+        {% if comments.has_prev %}
+        <a href="{{ url_for('admin.comments', page=comments.prev_num, q=request.args.get('q', '')) }}" class="btn btn--outline btn--small">이전</a>
+        {% else %}
         <button type="button" class="btn btn--outline btn--small" disabled>이전</button>
-        <span class="pagination-info">1 / 4 페이지</span>
-        <button type="button" class="btn btn--outline btn--small">다음</button>
+        {% endif %}
+        <span class="pagination-info">{{ comments.page }} / {{ comments.pages }} 페이지</span>
+        {% if comments.has_next %}
+        <a href="{{ url_for('admin.comments', page=comments.next_num, q=request.args.get('q', '')) }}" class="btn btn--outline btn--small">다음</a>
+        {% else %}
+        <button type="button" class="btn btn--outline btn--small" disabled>다음</button>
+        {% endif %}
       </div>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

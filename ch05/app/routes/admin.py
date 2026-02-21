@@ -2,12 +2,12 @@
 
 from pathlib import Path
 
-from flask import Blueprint, current_app, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.orm import joinedload
 
 from app import db
-from app.models import User, Video
+from app.models import Comment, User, Video
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -112,7 +112,45 @@ def videos():
 @login_required
 @_admin_required
 def comments():
-    return render_template("admin/comments.html")
+    """댓글 관리 – DB comments 테이블 연동, 검색·페이지네이션."""
+    from sqlalchemy import or_
+
+    page = request.args.get("page", 1, type=int)
+    q_param = (request.args.get("q") or "").strip()
+    if page < 1:
+        page = 1
+
+    query = Comment.query.options(
+        joinedload(Comment.user),
+        joinedload(Comment.video),
+    ).order_by(Comment.created_at.desc())
+
+    if q_param:
+        pattern = f"%{q_param}%"
+        query = query.join(Comment.user).filter(
+            or_(
+                Comment.content.ilike(pattern),
+                User.username.ilike(pattern),
+            )
+        )
+
+    pagination = query.paginate(page=page, per_page=15)
+    return render_template("admin/comments.html", comments=pagination)
+
+
+@admin_bp.route("/comments/<int:comment_id>/delete", methods=["POST"])
+@login_required
+@_admin_required
+def comment_delete(comment_id):
+    """관리자 댓글 삭제. 본인 확인 없이 삭제 가능."""
+    comment = Comment.query.get_or_404(comment_id)
+    db.session.delete(comment)
+    db.session.commit()
+    flash("댓글이 삭제되었습니다.", "success")
+    # 삭제 후 동일 페이지로 리다이렉트 (form hidden 또는 args)
+    page = request.form.get("page") or request.args.get("page", 1)
+    q = request.form.get("q") or request.args.get("q", "")
+    return redirect(url_for("admin.comments", page=page, q=q))
 
 
 @admin_bp.route("/database")
@@ -187,16 +225,13 @@ def table_view(table_name):
         "comment": {
             "columns": [
                 {"name": "id", "type": "INT", "key": "PK", "null": "NO"},
-                {"name": "video_id", "type": "INT", "key": "FK", "null": "NO"},
-                {"name": "user_id", "type": "INT", "key": "FK", "null": "NO"},
                 {"name": "content", "type": "TEXT", "key": "-", "null": "NO"},
+                {"name": "user_id", "type": "INT", "key": "FK", "null": "NO"},
+                {"name": "video_id", "type": "INT", "key": "FK", "null": "NO"},
+                {"name": "parent_id", "type": "INT", "key": "FK", "null": "YES"},
                 {"name": "created_at", "type": "DATETIME", "key": "-", "null": "NO"},
             ],
-            "sample": [
-                {"id": 1, "video_id": 1, "user_id": 1, "content": "좋은 영상이네요!", "created_at": "2025-01-20"},
-                {"id": 2, "video_id": 1, "user_id": 2, "content": "잘 봤습니다. 구독했어요!", "created_at": "2025-01-20"},
-                {"id": 3, "video_id": 2, "user_id": 3, "content": "프론트엔드 테스트 댓글입니다.", "created_at": "2025-01-19"},
-            ],
+            "sample": [],  # DB에서 실제 데이터 로드
         },
         "channel": {
             "columns": [
@@ -230,6 +265,21 @@ def table_view(table_name):
     else:
         columns = data["columns"]
         sample_data = data["sample"]
+
+    # comment 테이블: DB에서 실제 데이터 로드
+    if table_name == "comment":
+        comments = Comment.query.order_by(Comment.created_at.desc()).limit(20).all()
+        sample_data = [
+            {
+                "id": c.id,
+                "content": (c.content[:50] + "...") if c.content and len(c.content) > 50 else (c.content or ""),
+                "user_id": c.user_id,
+                "video_id": c.video_id,
+                "parent_id": c.parent_id,
+                "created_at": c.created_at.strftime("%Y-%m-%d %H:%M") if c.created_at else "",
+            }
+            for c in comments
+        ]
     return render_template(
         "admin/table_view.html",
         table_name=table_name,

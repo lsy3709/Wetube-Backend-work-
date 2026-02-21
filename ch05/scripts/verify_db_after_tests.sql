@@ -13,3 +13,7 @@ SELECT id, title, user_id, views, likes FROM videos ORDER BY id;
 
 SELECT '=== subscriptions ===' AS '';
 SELECT subscriber_id, subscribed_to_id FROM subscriptions;
+
+SELECT '=== comments ===' AS '';
+SELECT id, content, user_id, video_id, parent_id, likes, dislikes, created_at, updated_at 
+FROM comments ORDER BY parent_id, id, created_at;
