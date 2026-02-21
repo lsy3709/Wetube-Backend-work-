@@ -1791,43 +1791,63 @@ a.avatar:hover {
 
 .video-actions-left {
   display: flex;
-  gap: 8px;
+  gap: 20px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
+/* 액션 버튼 공통: 둥근 테두리로 아이콘+텍스트를 하나의 세트로 감쌈 */
 .video-actions .action-btn {
-  display: flex;
+  display: inline-flex;
+  flex-direction: row;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  background: var(--input-bg);
-  border: none;
-  border-radius: 20px;
+  gap: 20px;
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 24px;
   color: var(--text);
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s;
+  white-space: nowrap;
+  box-sizing: border-box;
+  min-width: fit-content;
 }
 
 .video-actions .action-btn:hover {
-  background: var(--border);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--text-muted);
 }
 
 .video-actions .action-btn.active {
-  background: var(--accent);
-  color: #fff;
+  background: transparent;
+  border-color: var(--border);
 }
 
-/* 좋아요 버튼: 하트 아이콘, 미선택 시 윤곽, 선택 시 빨간색 채움 */
+/* 좋아요 버튼: 하트 + "좋아요" + 숫자를 한 테두리 안에 묶음 */
 .video-actions .action-btn--like {
-  padding: 10px 18px;
+  padding: 12px 24px;
+  border-radius: 24px;
+  flex-shrink: 0;
+  min-width: fit-content;
+  box-sizing: border-box;
+}
+
+.video-actions .action-btn--like .action-btn-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
 }
 
 .video-actions .action-btn--like .action-icon--heart {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
 }
 
 .video-actions .action-btn--like .action-icon--heart svg {
@@ -1838,18 +1858,76 @@ a.avatar:hover {
   transition: stroke 0.2s, fill 0.2s;
 }
 
+.video-actions .action-btn--like .action-label,
+.video-actions .action-btn--like .action-count {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1;
+  display: inline;
+}
+
+/* 공유, 저장 버튼: 아이콘 + 텍스트 (같은 둥근 외곽선 형식) */
+.video-actions .action-btn .action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  font-size: 1.1rem;
+}
+
+.video-actions .action-btn .action-text {
+  display: inline;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
 .video-actions .action-btn--like:hover .action-icon--heart svg {
   stroke: var(--text);
 }
 
-.video-actions .action-btn--like.active {
-  background: transparent;
+.video-actions .action-btn--like:hover .action-label,
+.video-actions .action-btn--like:hover .action-count {
   color: var(--text);
 }
 
+.video-actions .action-btn:hover .action-text {
+  color: var(--text);
+}
+
+/* 좋아요 선택 시: 하트만 핑크색으로 채움, 외곽선 유지 */
+.video-actions .action-btn--like.active {
+  background: transparent;
+  color: inherit;
+}
+
 .video-actions .action-btn--like.active .action-icon--heart svg {
-  stroke: #e53935;
-  fill: #e53935;
+  stroke: #ec407a;
+  fill: #ec407a;
+}
+
+.video-actions .action-btn--like.active .action-label,
+.video-actions .action-btn--like.active .action-count {
+  color: var(--text-muted);
+}
+
+/* video-actions 반응형: 작은 화면에서 간격 축소 */
+@media (max-width: 768px) {
+  .video-actions-left {
+    gap: 12px;
+  }
+
+  .video-actions .action-btn {
+    gap: 12px;
+    padding: 8px 14px;
+  }
+
+  .video-actions .action-btn--like {
+    gap: 12px;
+    padding: 10px 18px;
+  }
 }
 
 /* Channel info */

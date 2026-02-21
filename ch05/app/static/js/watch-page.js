@@ -69,33 +69,6 @@
     });
   }
 
-  // 공유 버튼
-  const shareBtn = document.getElementById('btn-share');
-  if (shareBtn) {
-    shareBtn.addEventListener('click', function () {
-      const url = window.location.href;
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(function () {
-          alert('링크가 클립보드에 복사되었습니다.');
-        });
-      } else {
-        prompt('링크를 복사하세요:', url);
-      }
-    });
-  }
-
-  // 저장 버튼
-  const saveBtn = document.getElementById('btn-save');
-  if (saveBtn) {
-    saveBtn.addEventListener('click', function () {
-      this.classList.toggle('active');
-      const text = this.querySelector('.action-text');
-      if (text) {
-        text.textContent = this.classList.contains('active') ? '저장됨' : '저장';
-      }
-    });
-  }
-
   // 구독 버튼 (DB 반영)
   const subscribeBtn = document.getElementById('btn-subscribe');
   if (subscribeBtn) {
